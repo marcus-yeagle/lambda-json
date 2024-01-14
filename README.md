@@ -14,7 +14,17 @@ To use the λJSON REPL, run the script in a JavaScript environment. The interpre
 
 ## Tiny Motivating Example
 
-λJSON expression evaluated to JSON with the result of the expression
+The default evaluation mechanism adds a result property by applying the λJSON code property to the encapuslated data property.
+
+In this example all the code and all of the data is encapsulated into a JSON Object, which is then evaluated
+and transformed into the same object with the addition of a `result` property which value is the evaluated code with respect to the data
+
+```
+{
+  ...,
+  result: eval([code, data])
+}
+```
 
 ```
 {
@@ -34,6 +44,8 @@ To use the λJSON REPL, run the script in a JavaScript environment. The interpre
   ]
 }
 ```
+
+Result Output:
 
 ```
 {
