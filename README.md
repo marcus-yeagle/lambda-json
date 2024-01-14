@@ -188,7 +188,7 @@ To exit the REPL, type any of the following commands:
 
 ## Important Security Note
 
-The Command Line Interface utility use JavaScript's `eval` function for parsing λJSON expressions into JavaScript arrays for evaluation. While this implementation works for demonstration purposes, using `eval` is generally discouraged due to potential security risks. _Avoid using the CLI interpreter with untrusted input._ File input avoids the problem all together and should be used by default. The CLI tool should be used for development and prototyping purposes only!
+The Command Line Interface utility use JavaScript's `eval` function for parsing λJSON expressions into JavaScript arrays for evaluation. While this implementation works for demonstration purposes, using `eval` is generally discouraged due to potential security risks. **Avoid using the CLI interpreter with untrusted input.** File input avoids the problem all together and should be used by default. The CLI tool should be used for development and prototyping purposes only!
 
 ## License
 
