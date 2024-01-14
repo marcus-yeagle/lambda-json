@@ -2,7 +2,7 @@
 
 A Turing-complete, homoiconic strict subset of the JSON data interchange format.
 
-This repository contains a JavaScript implementation of an interpreter for λJSON, a simple Lisp embedding JS Arrays as Lists with basic arithmetic operations, comparators, lazy streams, lambda expressions, and hygienic macro support allowing users to extend JSON to include code to operate over the data itself in the same format in near realtime.
+This repository contains a JavaScript implementation of an interpreter for λJSON, a simple Lisp embedding of JS Arrays as Lists with basic arithmetic operations, comparators, lazy streams, lambda expressions, and hygienic macro support allowing users to extend JSON to include code to operate over the data itself in the same format in near realtime.
 
 ## Prerequisites
 
