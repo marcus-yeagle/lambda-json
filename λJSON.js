@@ -54,7 +54,6 @@ const globalEnv = {
 const primMathOps = ['+', '-', '*', '/'];
 
 //
-// TODO: ['square'] - breaks
 // TODO: fix:
 // λ-JSON -> []
 //
