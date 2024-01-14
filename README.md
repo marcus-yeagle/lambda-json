@@ -1,8 +1,8 @@
-# λ.JSON
+# λ.json
 
 A Turing-complete, homoiconic strict subset of the JSON data interchange format.
 
-This repository contains a JavaScript implementation of an interpreter for λ.JSON, a simple Lisp embedding of JS Arrays as Lists with basic arithmetic operations, comparators, lazy streams, lambda expressions, and hygienic macro support allowing users to extend JSON to include code to operate over the data itself in the same format in near realtime.
+This repository contains a JavaScript implementation of an interpreter for λ.json, a simple Lisp embedding of JS Arrays as Lists with basic arithmetic operations, comparators, lazy streams, lambda expressions, and hygienic macro support allowing users to extend JSON to include code to operate over the data itself in the same format in near realtime.
 
 ## Prerequisites
 
@@ -10,11 +10,11 @@ Ensure you have Node.js installed on your machine to run the interpreter or have
 
 ## Usage
 
-To use the λ.JSON REPL, run the script in a JavaScript environment. The interpreter will then prompt you to enter λ.JSON expressions for evaluation.
+To use the λ.json REPL, run the script in a JavaScript environment. The interpreter will then prompt you to enter λ.json expressions for evaluation.
 
 ## Tiny Motivating Example
 
-The default evaluation mechanism adds a result property by applying the λ.JSON code property to the encapuslated data property.
+The default evaluation mechanism adds a result property by applying the λ.json code property to the encapuslated data property.
 
 In this example all the code and all of the data is encapsulated into a JSON Object, which is then evaluated
 and transformed into the same object with the addition of a `result` property which value is the evaluated code with respect to the data
@@ -82,9 +82,9 @@ node λJSON.js -repl
 λ-JSON ->
 ```
 
-## λ.JSON Expressions
+## λ.json Expressions
 
-λ.JSON expressions are represented as Numbers, Strings, Lambdas or Lists in JavaScript. Here are some examples of valid types of λ.JSON expressions:
+λ.json expressions are represented as Numbers, Strings, Lambdas or Lists in JavaScript. Here are some examples of valid types of λ.json expressions:
 
 - Numbers: `2`, `3`, `5`
 - Strings: `'foo'`, `'bar'`, `'baz'`
@@ -200,7 +200,7 @@ To exit the REPL, type any of the following commands:
 
 ## Important Security Note
 
-The Command Line Interface utility use JavaScript's `eval` function for parsing λ.JSON expressions into JavaScript arrays for evaluation. While this implementation works for demonstration purposes, using `eval` is generally discouraged due to potential security risks. **Avoid using the CLI interpreter with untrusted input.** File input avoids the problem entirely and should be used by default. The CLI tool should be used for development and prototyping purposes only!
+The Command Line Interface utility use JavaScript's `eval` function for parsing λ.json expressions into JavaScript arrays for evaluation. While this implementation works for demonstration purposes, using `eval` is generally discouraged due to potential security risks. **Avoid using the CLI interpreter with untrusted input.** File input avoids the problem entirely and should be used by default. The CLI tool should be used for development and prototyping purposes only!
 
 ## License
 
