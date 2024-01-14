@@ -69,12 +69,12 @@ Result Output:
 
 ## Getting Started
 
-1. Clone this repository to your local machine.
+1. Clone this repository to your local machine (npm coming soon).
 2. Open a terminal or command prompt in the cloned directory.
-3. Start the REPL (Read-Eval-Print-Loop) the using the following flag:
+3. Start the REPL (Read-Eval-Print-Loop)
 
 ```bash
-node λJSON.js -repl
+npm run cli
 λ.json -> ['+', 2, 3, 5]
 
 10!

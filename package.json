@@ -4,7 +4,8 @@
   "description": "A Turing-complete, homoiconic strict subset of the JSON data interchange format.",
   "main": "λjson.js",
   "scripts": {
-    "test": "jest"
+    "test": "jest",
+    "cli": "node cli.js -repl"
   },
   "keywords": [],
   "author": "Marcus Yeagle",
