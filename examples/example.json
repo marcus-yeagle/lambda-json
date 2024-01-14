@@ -1,0 +1,12 @@
+{
+  "data": [1, 2, 3, 4],
+  "code": [
+    "λ",
+    ["nums"],
+    [
+      "/",
+      ["reduce", ["λ", ["acc", "curr"], ["+", "acc", "curr"]], "nums"],
+      ["length", "nums"]
+    ]
+  ]
+}

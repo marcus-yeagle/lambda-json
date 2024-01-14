@@ -1,0 +1,15 @@
+{
+  "name": "λJSON",
+  "version": "0.0.2",
+  "description": "A Turing-complete, homoiconic strict subset of the JSON data interchange format.",
+  "main": "evaluator.test.js",
+  "scripts": {
+    "test": "jest"
+  },
+  "keywords": [],
+  "author": "Marcus Yeagle",
+  "license": "MIT",
+  "devDependencies": {
+    "jest": "^29.7.0"
+  }
+}
