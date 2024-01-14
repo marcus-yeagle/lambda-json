@@ -1,4 +1,4 @@
-# λJSON
+# λ.JSON
 
 A Turing-complete, homoiconic strict subset of the JSON data interchange format.
 
