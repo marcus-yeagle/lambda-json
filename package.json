@@ -1,8 +1,8 @@
 {
-  "name": "λJSON",
+  "name": "λ.json",
   "version": "0.0.2",
   "description": "A Turing-complete, homoiconic strict subset of the JSON data interchange format.",
-  "main": "evaluator.test.js",
+  "main": "λjson.js",
   "scripts": {
     "test": "jest"
   },

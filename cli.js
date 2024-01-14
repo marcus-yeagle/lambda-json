@@ -1,4 +1,4 @@
-const { evaluate, globalEnv } = require('./λJSON');
+const { evaluate, globalEnv } = require('./λjson.js');
 const fs = require('fs');
 const readline = require('readline').createInterface({
   input: process.stdin,
@@ -6,7 +6,7 @@ const readline = require('readline').createInterface({
 });
 if (process.argv.includes('-repl')) {
   // Reader
-  readline.setPrompt('λ-JSON -> ');
+  readline.setPrompt('λ.json -> ');
   readline.prompt();
   readline
     .on('line', function (λexpression) {
