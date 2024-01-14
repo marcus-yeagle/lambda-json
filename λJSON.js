@@ -53,31 +53,10 @@ const globalEnv = {
 
 const primMathOps = ['+', '-', '*', '/'];
 
-// λ-JSON Literals:
-//
-// 2, 3, 5 - Numbers
-// 'foo', 'bar', 'baz' - Strings
-// [], [2, 3, 'cat'], [[], [1], ['2']], ['square', 3] - Lists
 //
 // TODO: ['square'] - breaks
 // TODO: fix:
 // λ-JSON -> []
-
-// !
-
-// λ-JSON -> []
-
-// !
-
-// λ-JSON -> null
-
-// undefined!
-
-// λ-JSON -> undefined
-
-// undefined!
-
-// λ-JSON ->
 //
 // Evaluate an expression in the given environment
 function evaluate(exp, env) {

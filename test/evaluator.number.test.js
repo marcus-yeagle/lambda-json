@@ -1,9 +1,9 @@
 const { evaluate } = require('../λjson.js');
-test('evaluates a λJSON number to JS number', () => {
+test('evaluates a λ.json number to JS number', () => {
   expect(evaluate(42, {})).toBe(42);
 });
 
-test('evaluates a negative λJSON number to a negative JS number', () => {
+test('evaluates a negative λ.json number to a negative JS number', () => {
   expect(evaluate(-3, {})).toBe(-3);
 });
 
