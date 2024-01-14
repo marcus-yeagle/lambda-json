@@ -75,11 +75,11 @@ Result Output:
 
 ```bash
 node λJSON.js -repl
-λ-JSON -> ['+', 2, 3, 5]
+λ.json -> ['+', 2, 3, 5]
 
 10!
 
-λ-JSON ->
+λ.json ->
 ```
 
 ## λ.json Expressions
@@ -115,27 +115,27 @@ node λJSON.js -repl
 1. Simple Arithmetic:
 
 ```λ-JSON
-λ-JSON -> ['+', 2, 3]
+λ.json -> ['+', 2, 3]
 Output: 5
 ```
 
 2. Variables and Definitions:
 
 ```λ-JSON
-λ-JSON -> ['define', 'x', 5]
+λ.json -> ['define', 'x', 5]
 Output: 5
 
-λ-JSON -> ['+', 'x', 3]
+λ.json -> ['+', 'x', 3]
 Output: 8
 ```
 
 3. Conditional Expressions:
 
 ```λ-JSON
-λ-JSON -> ['if', ['>', 5, 2], 10, 20]
+λ.json -> ['if', ['>', 5, 2], 10, 20]
 Output: 10
 
-λ-JSON -> ['cond',
+λ.json -> ['cond',
             [['>', 5, 10], 'greater'],
             [['<', 5, 10], 'less'],
             ['else', 'equal']]
@@ -145,17 +145,17 @@ Output: 'less'
 4. λ Lambdas:
 
 ```λ-JSON
-λ-JSON -> ['define', 'square', ['λ', ['x'], ['*', 'x', 'x']]]
+λ.json -> ['define', 'square', ['λ', ['x'], ['*', 'x', 'x']]]
 Output: [Function: anonymous]
 
-λ-JSON -> ['square', 5]
+λ.json -> ['square', 5]
 Output: 25
 ```
 
 5. Recursion:
 
 ```λ-JSON
-λ-JSON -> [[
+λ.json -> [[
     'define',
     'fib',
     [
@@ -182,7 +182,7 @@ Output: 55
 6. Negation:
 
 ```λ-JSON
-λ-JSON -> ['not', true]
+λ.json -> ['not', true]
 Output: false
 ```
 
