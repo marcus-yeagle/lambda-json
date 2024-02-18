@@ -15,7 +15,7 @@ if (process.argv.includes('-repl')) {
       // Printer
       console.log();
       try {
-        console.log(`${evaluate(eval(λexpression), globalEnv)}!`);
+        console.log(`${evaluate(eval(λexpression), globalEnv)}`);
       } catch (e) {
         console.error(e);
       }

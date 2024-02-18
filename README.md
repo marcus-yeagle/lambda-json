@@ -87,6 +87,7 @@ npm run cli
 λ.json expressions are represented as Numbers, Strings, Lambdas or Lists in JavaScript. Here are some examples of valid types of λ.json expressions:
 
 - Numbers: `2`, `3`, `5`
+- Booleans `true`, `false`
 - Strings: `'foo'`, `'bar'`, `'baz'`
 - Lists: `[]`, `[2, 3, 'cat']`, `[[], [1], ['2']]`, `['square', 3]`
 - Lambdas: `['λ', ['n'], ['*', 'n', 'n']]`, `['lambda', ['x'], ['+', 'x', '1']]`
@@ -138,7 +139,7 @@ Output: 10
 λ.json -> ['cond',
             [['>', 5, 10], 'greater'],
             [['<', 5, 10], 'less'],
-            ['else', 'equal']]
+            ['else', 'other']]
 Output: 'less'
 ```
 

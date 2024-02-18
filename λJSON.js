@@ -51,12 +51,8 @@ const globalEnv = {
   not: (args) => !evaluate(args[0], {}), // 'not' special form
 };
 
-const primMathOps = ['+', '-', '*', '/'];
+const primMathOps = ['+', '-', '*', '/', '>', '<'];
 
-//
-// TODO: fix:
-// λ-JSON -> []
-//
 // Evaluate an expression in the given environment
 function evaluate(exp, env) {
   if (typeof exp === 'number') {
@@ -70,6 +66,8 @@ function evaluate(exp, env) {
     } else {
       return exp;
     }
+  } else if (typeof exp === 'boolean') {
+    return exp; // Boolean literals evaluate to themselves
   } else if (Array.isArray(exp)) {
     const [operator, ...args] = exp;
     if (operator === 'define') {
