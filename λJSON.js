@@ -244,6 +244,8 @@ function evaluate(exp, env) {
       }
     }
   }
+
+  return Error('Invalid λ.json expression');
 }
 
 module.exports = { globalEnv, evaluate };

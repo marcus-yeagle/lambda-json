@@ -1,5 +1,5 @@
 {
-  "name": "λ.json",
+  "name": "lambda-json",
   "version": "0.0.2",
   "description": "A Turing-complete, homoiconic strict subset of the JSON data interchange format.",
   "main": "λjson.js",
