@@ -105,7 +105,7 @@ npm run cli
 - `>`: Greater than
 - `<`: Less than
 
-### Special Form
+### Logical
 
 - `eq?`: A special form for checking general equality
 - `not`: A special form for negation
