@@ -48,10 +48,12 @@ const globalEnv = {
     args.every((val, index) => index === 0 || args[index - 1] > val), // Greater than comparator
   '<': (args) =>
     args.every((val, index) => index === 0 || args[index - 1] < val), // Less than comparator
+  and: (args) => args.every((arg) => evaluate(arg, {})),
+  or: (args) => args.some((arg) => evaluate(arg, {})),
   not: (args) => !evaluate(args[0], {}), // 'not' special form
 };
 
-const primMathOps = ['+', '-', '*', '/', '>', '<'];
+const primativeOps = ['+', '-', '*', '/', '>', '<', 'not', 'and', 'or'];
 
 // Evaluate an expression in the given environment
 function evaluate(exp, env) {
@@ -234,7 +236,7 @@ function evaluate(exp, env) {
       if (typeof evaluatedOperator === 'function') {
         // Pass args in as JS Array for primative reduce [a1, a2]
         // Otherwise pass the evaluated args to function normally (a1, a2)
-        return primMathOps.includes(evaluatedOperator.name)
+        return primativeOps.includes(evaluatedOperator.name)
           ? evaluatedOperator(evaluatedArgs)
           : evaluatedOperator(...evaluatedArgs);
       } else {

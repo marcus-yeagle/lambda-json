@@ -77,7 +77,7 @@ Result Output:
 npm run cli
 λ.json -> ['+', 2, 3, 5]
 
-10!
+10
 
 λ.json ->
 ```
@@ -106,10 +106,12 @@ npm run cli
 - `>`: Greater than
 - `<`: Less than
 
-### Logical
+### Logic
 
 - `eq?`: A special form for checking general equality
 - `not`: A special form for negation
+- `and`: A special form for logical conjunction
+- `or`: A special form for logical disjunction
 
 ## Examples
 
@@ -180,11 +182,31 @@ Output: 25
 Output: 55
 ```
 
-6. Negation:
+6. Logic:
+
+```λ-JSON
+λ.json -> true
+Output: true
+```
 
 ```λ-JSON
 λ.json -> ['not', true]
 Output: false
+```
+
+```λ-JSON
+λ.json -> ['not', ['not', false]]
+Output: false
+```
+
+```λ-JSON
+λ.json -> ['and', ['not', false], true]
+Output: true
+```
+
+```λ-JSON
+λ.json -> ['or', true, false, true]
+Output: true
 ```
 
 ## Exiting the REPL
