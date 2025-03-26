@@ -141,25 +141,8 @@ function evaluate(exp, env) {
       return list.length;
     } else if (operator === 'cons-stream') {
       const headValue = evaluate(args[0], env);
-      const tailThunk = evaluate(args[1], env);
-      return [
-        headValue,
-        function* () {
-          const tailStream = tailThunk();
-          for (const value of tailStream) {
-            yield value;
-          }
-        },
-      ];
-      // const headValue = evaluate(args[0], env);
-      // const tailThunk = evaluate(args[1], env);
-      // return function* () {
-      //   yield headValue;
-      //   const tailStream = tailThunk();
-      //   for (const value of tailStream) {
-      //     yield value;
-      //   }
-      // };
+      const tailThunk = () => evaluate(args[1], env); // Thunk: delay evaluation of tail
+      return { head: headValue, tail: tailThunk }; // Stream as an object
     } else if (operator === 'delay') {
       return function* () {
         for (const arg of args[0]) {
@@ -187,13 +170,13 @@ function evaluate(exp, env) {
       }
     } else if (operator === 'take') {
       let n = evaluate(args[0], env);
-      const stream = evaluate(args[1], env);
+      let stream = evaluate(args[1], env); // Get the stream object
       const result = [];
-      const gen = stream[1]();
-
-      while (n !== 0) {
-        result.push(gen.next().value);
-        --n;
+      
+      while (n > 0 && stream) {
+        result.push(stream.head); // Add head to result
+        stream = stream.tail(); // Evaluate tail thunk to get next stream part
+        n--;
       }
       return result;
     } else if (operator === 'enum-stream') {
