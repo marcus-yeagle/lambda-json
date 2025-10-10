@@ -1,0 +1,475 @@
+{
+  "description": "Investment Asset Management & Accounting System in λ.json",
+  "version": "1.0.0",
+  "last_updated": "2025-10-10",
+  
+  "business_rules": {
+    "description": "Configurable business rules for investment processing",
+    
+    "transaction_fees": {
+      "description": "Calculate transaction fees based on account tier and amount",
+      "rule": [
+        "define", "calculate-fee",
+        ["λ", ["amount", "tier", "transaction-type"],
+          ["cond",
+            [["eq?", "tier", "'premium'"], 0],
+            [["eq?", "tier", "'gold'"], 
+              ["cond",
+                [["eq?", "transaction-type", "'buy'"], ["*", "amount", 0.001]],
+                [["eq?", "transaction-type", "'sell'"], ["*", "amount", 0.0015]],
+                ["else", 0]
+              ]
+            ],
+            [["eq?", "tier", "'standard'"],
+              ["cond",
+                [["eq?", "transaction-type", "'buy'"], ["*", "amount", 0.0025]],
+                [["eq?", "transaction-type", "'sell'"], ["*", "amount", 0.003]],
+                ["else", 0]
+              ]
+            ],
+            ["else", ["*", "amount", 0.005]]
+          ]
+        ]
+      ]
+    },
+
+    "tax_calculation": {
+      "description": "Calculate capital gains tax based on holding period and gain amount",
+      "short_term_rate": 0.37,
+      "long_term_rate": 0.20,
+      "rule": [
+        "define", "calculate-tax",
+        ["λ", ["gain", "holding-days"],
+          ["cond",
+            [["<", "gain", 0], 0],
+            [[">", "holding-days", 365],
+              ["*", "gain", 0.20]
+            ],
+            ["else", ["*", "gain", 0.37]]
+          ]
+        ]
+      ]
+    },
+
+    "position_sizing": {
+      "description": "Calculate maximum position size based on risk tolerance",
+      "rule": [
+        "define", "max-position-size",
+        ["λ", ["portfolio-value", "risk-tolerance", "volatility"],
+          ["let",
+            [
+              ["risk-amount", ["*", "portfolio-value", "risk-tolerance"]],
+              ["position-risk", ["*", "volatility", 2]],
+              ["max-size", ["/", "risk-amount", "position-risk"]]
+            ],
+            ["cond",
+              [[">", "max-size", ["*", "portfolio-value", 0.2]], 
+                ["*", "portfolio-value", 0.2]
+              ],
+              ["else", "max-size"]
+            ]
+          ]
+        ]
+      ]
+    },
+
+    "rebalancing": {
+      "description": "Determine if portfolio needs rebalancing",
+      "rule": [
+        "define", "needs-rebalancing",
+        ["λ", ["current-allocation", "target-allocation", "threshold"],
+          [">", 
+            ["cond",
+              [[">", "current-allocation", "target-allocation"],
+                ["-", "current-allocation", "target-allocation"]
+              ],
+              ["else", ["-", "target-allocation", "current-allocation"]]
+            ],
+            "threshold"
+          ]
+        ]
+      ]
+    },
+
+    "wash_sale_check": {
+      "description": "Check if transaction violates wash sale rule (30 days)",
+      "rule": [
+        "define", "is-wash-sale",
+        ["λ", ["sell-date", "buy-date", "days-between"],
+          ["and",
+            ["<", "days-between", 30],
+            [">", "buy-date", "sell-date"]
+          ]
+        ]
+      ]
+    },
+
+    "margin_requirement": {
+      "description": "Calculate margin requirement for leveraged positions",
+      "rule": [
+        "define", "margin-required",
+        ["λ", ["position-value", "leverage", "asset-class"],
+          ["cond",
+            [["eq?", "asset-class", "'stocks'"],
+              ["/", "position-value", 2]
+            ],
+            [["eq?", "asset-class", "'options'"],
+              ["*", "position-value", 0.2]
+            ],
+            [["eq?", "asset-class", "'futures'"],
+              ["*", "position-value", 0.1]
+            ],
+            ["else", "position-value"]
+          ]
+        ]
+      ]
+    },
+
+    "dividend_reinvestment": {
+      "description": "Calculate shares to purchase with dividend",
+      "rule": [
+        "define", "drip-shares",
+        ["λ", ["dividend-amount", "current-price", "fee"],
+          ["let",
+            [
+              ["net-dividend", ["-", "dividend-amount", "fee"]],
+              ["shares", ["/", "net-dividend", "current-price"]]
+            ],
+            "shares"
+          ]
+        ]
+      ]
+    },
+
+    "stop_loss_trigger": {
+      "description": "Determine if stop loss should be triggered",
+      "rule": [
+        "define", "trigger-stop-loss",
+        ["λ", ["current-price", "entry-price", "stop-loss-pct"],
+          ["let",
+            [
+              ["loss-pct", ["/", ["-", "entry-price", "current-price"], "entry-price"]],
+              ["stop-price", ["*", "entry-price", ["-", 1, "stop-loss-pct"]]]
+            ],
+            ["<", "current-price", "stop-price"]
+          ]
+        ]
+      ]
+    },
+
+    "portfolio_risk_score": {
+      "description": "Calculate overall portfolio risk score",
+      "rule": [
+        "define", "risk-score",
+        ["λ", ["volatility", "concentration", "leverage", "liquidity"],
+          ["let",
+            [
+              ["vol-score", ["*", "volatility", 0.3]],
+              ["conc-score", ["*", "concentration", 0.3]],
+              ["lev-score", ["*", "leverage", 0.25]],
+              ["liq-score", ["*", "liquidity", 0.15]],
+              ["total", ["+", "vol-score", "conc-score", "lev-score", "liq-score"]]
+            ],
+            ["cond",
+              [[">", "total", 0.7], "'high-risk'"],
+              [[">", "total", 0.4], "'medium-risk'"],
+              ["else", "'low-risk'"]
+            ]
+          ]
+        ]
+      ]
+    }
+  },
+
+  "transaction_processing": {
+    "description": "Complete transaction processing pipeline",
+    
+    "process_buy": {
+      "description": "Process a buy transaction with all validations and calculations",
+      "steps": [
+        "define", "process-buy",
+        ["λ", ["symbol", "quantity", "price", "account-tier", "portfolio-value"],
+          ["let",
+            [
+              ["gross-amount", ["*", "quantity", "price"]],
+              ["fee", ["calculate-fee", "gross-amount", "account-tier", "'buy'"]],
+              ["total-cost", ["+", "gross-amount", "fee"]],
+              ["position-size-pct", ["/", "total-cost", "portfolio-value"]],
+              ["is-valid", ["<", "position-size-pct", 0.2]]
+            ],
+            ["cond",
+              [["not", "is-valid"], 
+                "'ERROR: Position exceeds 20% portfolio limit'"
+              ],
+              ["else",
+                ["let",
+                  [
+                    ["cost-basis", "total-cost"],
+                    ["shares", "quantity"],
+                    ["avg-price", ["/", "cost-basis", "shares"]]
+                  ],
+                  "cost-basis"
+                ]
+              ]
+            ]
+          ]
+        ]
+      ]
+    },
+
+    "process_sell": {
+      "description": "Process a sell transaction with tax calculations",
+      "steps": [
+        "define", "process-sell",
+        ["λ", ["symbol", "quantity", "sell-price", "cost-basis", "holding-days", "account-tier"],
+          ["let",
+            [
+              ["gross-proceeds", ["*", "quantity", "sell-price"]],
+              ["fee", ["calculate-fee", "gross-proceeds", "account-tier", "'sell'"]],
+              ["net-proceeds", ["-", "gross-proceeds", "fee"]],
+              ["capital-gain", ["-", "net-proceeds", "cost-basis"]],
+              ["tax", ["calculate-tax", "capital-gain", "holding-days"]],
+              ["net-gain", ["-", "capital-gain", "tax"]]
+            ],
+            "net-gain"
+          ]
+        ]
+      ]
+    },
+
+    "process_dividend": {
+      "description": "Process dividend payment and optional reinvestment",
+      "steps": [
+        "define", "process-dividend",
+        ["λ", ["shares", "dividend-per-share", "current-price", "reinvest", "account-tier"],
+          ["let",
+            [
+              ["total-dividend", ["*", "shares", "dividend-per-share"]],
+              ["tax", ["*", "total-dividend", 0.15]],
+              ["net-dividend", ["-", "total-dividend", "tax"]]
+            ],
+            ["cond",
+              ["reinvest",
+                ["let",
+                  [
+                    ["fee", ["calculate-fee", "net-dividend", "account-tier", "'buy'"]],
+                    ["investable", ["-", "net-dividend", "fee"]],
+                    ["new-shares", ["/", "investable", "current-price"]]
+                  ],
+                  "new-shares"
+                ]
+              ],
+              ["else", "net-dividend"]
+            ]
+          ]
+        ]
+      ]
+    }
+  },
+
+  "portfolio_analytics": {
+    "description": "Portfolio analysis and reporting functions",
+
+    "calculate_returns": {
+      "description": "Calculate various return metrics",
+      "rule": [
+        "define", "portfolio-returns",
+        ["λ", ["current-value", "initial-value", "days-held"],
+          ["let",
+            [
+              ["total-return", ["/", ["-", "current-value", "initial-value"], "initial-value"]],
+              ["annual-return", ["*", "total-return", ["/", 365, "days-held"]]],
+              ["return-pct", ["*", "total-return", 100]]
+            ],
+            "return-pct"
+          ]
+        ]
+      ]
+    },
+
+    "sharpe_ratio": {
+      "description": "Calculate risk-adjusted returns (Sharpe ratio)",
+      "rule": [
+        "define", "sharpe",
+        ["λ", ["portfolio-return", "risk-free-rate", "volatility"],
+          ["/", ["-", "portfolio-return", "risk-free-rate"], "volatility"]
+        ]
+      ]
+    },
+
+    "position_weight": {
+      "description": "Calculate position weight in portfolio",
+      "rule": [
+        "define", "weight",
+        ["λ", ["position-value", "total-portfolio-value"],
+          ["*", ["/", "position-value", "total-portfolio-value"], 100]
+        ]
+      ]
+    },
+
+    "unrealized_gain_loss": {
+      "description": "Calculate unrealized P&L for open positions",
+      "rule": [
+        "define", "unrealized-pnl",
+        ["λ", ["quantity", "current-price", "cost-basis"],
+          ["-", ["*", "quantity", "current-price"], "cost-basis"]
+        ]
+      ]
+    }
+  },
+
+  "compliance_checks": {
+    "description": "Regulatory and compliance validations",
+
+    "pattern_day_trader": {
+      "description": "Check if account qualifies as pattern day trader",
+      "rule": [
+        "define", "is-pdt",
+        ["λ", ["day-trades-count", "days-period", "account-value"],
+          ["and",
+            [">", "day-trades-count", 3],
+            ["<", "days-period", 5],
+            ["<", "account-value", 25000]
+          ]
+        ]
+      ]
+    },
+
+    "concentration_limit": {
+      "description": "Check if position exceeds concentration limits",
+      "rule": [
+        "define", "exceeds-concentration",
+        ["λ", ["position-value", "portfolio-value", "limit-pct"],
+          [">", ["/", "position-value", "portfolio-value"], "limit-pct"]
+        ]
+      ]
+    },
+
+    "trading_halt_check": {
+      "description": "Verify if trading is allowed for symbol",
+      "rule": [
+        "define", "can-trade",
+        ["λ", ["is-halted", "is-delisted", "has-news-pending"],
+          ["not", ["or", "is-halted", "is-delisted", "has-news-pending"]]
+        ]
+      ]
+    }
+  },
+
+  "example_scenarios": {
+    "description": "Real-world transaction examples",
+
+    "scenario_1_buy_tech_stock": {
+      "description": "Buy 100 shares of tech stock",
+      "input": {
+        "symbol": "TECH",
+        "quantity": 100,
+        "price": 150.50,
+        "account_tier": "gold",
+        "portfolio_value": 100000
+      },
+      "expected_calculations": {
+        "gross_amount": 15050,
+        "fee": 15.05,
+        "total_cost": 15065.05,
+        "position_size_pct": 15.07,
+        "validation": "PASS - under 20% limit"
+      }
+    },
+
+    "scenario_2_sell_with_gain": {
+      "description": "Sell 50 shares held for 400 days (long-term gain)",
+      "input": {
+        "symbol": "TECH",
+        "quantity": 50,
+        "sell_price": 175.00,
+        "cost_basis": 7525,
+        "holding_days": 400,
+        "account_tier": "gold"
+      },
+      "expected_calculations": {
+        "gross_proceeds": 8750,
+        "fee": 13.125,
+        "net_proceeds": 8736.875,
+        "capital_gain": 1211.875,
+        "tax_rate": "20% (long-term)",
+        "tax": 242.375,
+        "net_gain": 969.50
+      }
+    },
+
+    "scenario_3_dividend_reinvestment": {
+      "description": "Reinvest quarterly dividend",
+      "input": {
+        "shares": 100,
+        "dividend_per_share": 0.50,
+        "current_price": 152.00,
+        "reinvest": true,
+        "account_tier": "premium"
+      },
+      "expected_calculations": {
+        "total_dividend": 50,
+        "tax": 7.50,
+        "net_dividend": 42.50,
+        "fee": 0,
+        "new_shares": 0.2796
+      }
+    },
+
+    "scenario_4_stop_loss_trigger": {
+      "description": "Check if stop loss should trigger",
+      "input": {
+        "current_price": 135.00,
+        "entry_price": 150.00,
+        "stop_loss_pct": 0.08
+      },
+      "expected_calculations": {
+        "stop_price": 138.00,
+        "current_loss_pct": 10.0,
+        "trigger": true,
+        "action": "SELL - Stop loss triggered"
+      }
+    },
+
+    "scenario_5_portfolio_rebalancing": {
+      "description": "Determine rebalancing needs",
+      "input": {
+        "positions": [
+          {"asset": "stocks", "current": 0.65, "target": 0.60},
+          {"asset": "bonds", "current": 0.25, "target": 0.30},
+          {"asset": "cash", "current": 0.10, "target": 0.10}
+        ],
+        "threshold": 0.05
+      },
+      "expected_actions": [
+        "SELL stocks: 5% over target",
+        "BUY bonds: 5% under target",
+        "HOLD cash: at target"
+      ]
+    }
+  },
+
+  "integration_example": {
+    "description": "How to use these rules in a real application",
+    "code_example": "const { evaluate, globalEnv } = require('./λJSON.js');\n\n// Load rules from JSON\nconst rules = require('./investment-accounting.json');\n\n// Initialize all business rules\nfor (const [name, rule] of Object.entries(rules.business_rules)) {\n  if (rule.rule) {\n    evaluate(rule.rule, globalEnv);\n  }\n}\n\n// Process a buy transaction\nconst buyResult = evaluate(\n  ['process-buy', \"'AAPL'\", 100, 150.50, \"'gold'\", 100000],\n  globalEnv\n);\n\n// Calculate fees\nconst fee = evaluate(\n  ['calculate-fee', 15050, \"'gold'\", \"'buy'\"],\n  globalEnv\n);\n\n// Check if rebalancing needed\nconst needsRebalance = evaluate(\n  ['needs-rebalancing', 0.65, 0.60, 0.05],\n  globalEnv\n);\n\nconsole.log('Buy cost:', buyResult);\nconsole.log('Transaction fee:', fee);\nconsole.log('Needs rebalancing:', needsRebalance);"
+  },
+
+  "advantages": {
+    "hot_reload": "Update rules without redeploying application",
+    "version_control": "Track rule changes in git with full history",
+    "ab_testing": "Test different rule sets with different user groups",
+    "audit_trail": "Every rule change is documented and traceable",
+    "non_developer_updates": "Business analysts can modify rules",
+    "environment_specific": "Different rules for dev/staging/production",
+    "rollback": "Easy to revert to previous rule versions",
+    "testing": "Rules can be unit tested independently"
+  },
+
+  "deployment_strategy": {
+    "development": "Load rules from local JSON file",
+    "staging": "Load rules from configuration service",
+    "production": "Load rules from CDN with caching",
+    "rollout": "Gradual rollout with feature flags",
+    "monitoring": "Track rule execution metrics and errors"
+  }
+}

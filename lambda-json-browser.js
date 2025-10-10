@@ -1,27 +1,12 @@
 /**
- * λ.json - A Turing-complete, homoiconic strict subset of JSON
- * 
- * This module provides an interpreter for λ.json expressions, supporting:
- * - Basic arithmetic operations (+, -, *, /)
- * - Comparison operators (>, <)
- * - Logical operators (and, or, not)
- * - Lambda expressions and closures
- * - Conditional expressions (if, cond)
- * - Variable definitions and scoping (define, let, let*)
- * - Higher-order functions (map, filter, reduce)
- * - Lazy evaluation and streams
+ * λ.json - Browser-compatible interpreter
+ * A Turing-complete, homoiconic strict subset of JSON
  */
 
 /**
  * Global environment containing built-in operators and functions
- * @type {Object.<string, Function>}
  */
 const globalEnv = {
-  /**
-   * Addition operator - supports numbers and strings
-   * @param {Array} args - Arguments to add
-   * @returns {number|string} Sum of arguments
-   */
   '+': (args) => {
     if (args.length === 0) return 0;
     if (args.every((a) => typeof a === 'number')) {
@@ -33,11 +18,6 @@ const globalEnv = {
     }
   },
 
-  /**
-   * Subtraction operator
-   * @param {Array<number>} args - Numbers to subtract
-   * @returns {number} Difference of arguments
-   */
   '-': (args) => {
     if (args.length === 0) return 0;
     if (!args.every((a) => typeof a === 'number')) {
@@ -46,11 +26,6 @@ const globalEnv = {
     return args.length === 1 ? -args[0] : args.reduce((acc, val) => acc - val);
   },
 
-  /**
-   * Multiplication operator
-   * @param {Array<number>} args - Numbers to multiply
-   * @returns {number} Product of arguments
-   */
   '*': (args) => {
     if (args.length === 0) return 1;
     if (!args.every((a) => typeof a === 'number')) {
@@ -59,11 +34,6 @@ const globalEnv = {
     return args.reduce((acc, val) => acc * val, 1);
   },
 
-  /**
-   * Division operator
-   * @param {Array<number>} args - Numbers to divide
-   * @returns {number} Quotient of arguments
-   */
   '/': (args) => {
     if (args.length === 0) {
       throw new Error('Division requires at least one argument');
@@ -77,32 +47,16 @@ const globalEnv = {
     return args.reduce((acc, val) => acc / val);
   },
 
-  /**
-   * Greater than comparator - checks if arguments are in descending order
-   * @param {Array<number>} args - Numbers to compare
-   * @returns {boolean} True if each element is greater than the next
-   */
   '>': (args) => {
     if (args.length < 2) return true;
     return args.every((val, index) => index === 0 || args[index - 1] > val);
   },
 
-  /**
-   * Less than comparator - checks if arguments are in ascending order
-   * @param {Array<number>} args - Numbers to compare
-   * @returns {boolean} True if each element is less than the next
-   */
   '<': (args) => {
     if (args.length < 2) return true;
     return args.every((val, index) => index === 0 || args[index - 1] < val);
   },
 
-  /**
-   * Logical AND operator - evaluates arguments lazily
-   * @param {Array} args - Expressions to evaluate
-   * @param {Object} env - Environment for evaluation
-   * @returns {boolean} True if all arguments evaluate to truthy
-   */
   and: (args, env) => {
     for (const arg of args) {
       if (!evaluate(arg, env)) {
@@ -112,12 +66,6 @@ const globalEnv = {
     return true;
   },
 
-  /**
-   * Logical OR operator - evaluates arguments lazily
-   * @param {Array} args - Expressions to evaluate
-   * @param {Object} env - Environment for evaluation
-   * @returns {boolean} True if any argument evaluates to truthy
-   */
   or: (args, env) => {
     for (const arg of args) {
       if (evaluate(arg, env)) {
@@ -127,12 +75,6 @@ const globalEnv = {
     return false;
   },
 
-  /**
-   * Logical NOT operator
-   * @param {Array} args - Single expression to negate
-   * @param {Object} env - Environment for evaluation
-   * @returns {boolean} Negation of the argument
-   */
   not: (args, env) => {
     if (args.length !== 1) {
       throw new Error('not requires exactly one argument');
@@ -141,19 +83,10 @@ const globalEnv = {
   },
 };
 
-/**
- * List of primitive operators that receive arguments as arrays
- * @type {Array<string>}
- */
 const primitiveOps = ['+', '-', '*', '/', '>', '<', 'not', 'and', 'or'];
 
 /**
  * Evaluates a λ.json expression in the given environment
- * 
- * @param {*} exp - The expression to evaluate
- * @param {Object} env - The environment containing variable bindings
- * @returns {*} The result of evaluating the expression
- * @throws {Error} If the expression is invalid or evaluation fails
  */
 function evaluate(exp, env) {
   // Self-evaluating expressions
@@ -178,14 +111,14 @@ function evaluate(exp, env) {
     if (globalEnv[exp] !== undefined) {
       return globalEnv[exp];
     }
-    // Return as literal if not found (for unbound variables)
+    // Return as literal if not found
     return exp;
   }
   
-  // Array expressions (function applications and special forms)
+  // Array expressions
   if (Array.isArray(exp)) {
     if (exp.length === 0) {
-      return exp; // Empty array evaluates to itself
+      return exp;
     }
 
     const [operator, ...args] = exp;
@@ -244,7 +177,7 @@ function evaluate(exp, env) {
           return evaluate(expr, env);
         }
       }
-      return undefined; // No clause matched
+      return undefined;
     }
 
     if (operator === 'let') {
@@ -311,7 +244,7 @@ function evaluate(exp, env) {
       if (typeof x !== 'number' || typeof y !== 'number') {
         throw new Error('divides? requires numeric arguments');
       }
-      if (x === 0) return false; // 0 doesn't divide anything
+      if (x === 0) return false;
       return y % x === 0;
     }
 
@@ -420,7 +353,7 @@ function evaluate(exp, env) {
       if (typeof stream === 'function') {
         return function* () {
           const generator = stream();
-          generator.next(); // Skip first value
+          generator.next();
           for (const value of generator) {
             yield value;
           }
@@ -540,5 +473,3 @@ function evaluate(exp, env) {
 
   throw new Error(`Invalid λ.json expression: ${JSON.stringify(exp)}`);
 }
-
-module.exports = { globalEnv, evaluate };
