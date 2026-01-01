@@ -23,6 +23,7 @@
  * @property {boolean} warnDeprecated - If true, warns about deprecated features (default: true)
  * @property {number} maxRecursionDepth - Maximum call stack depth (default: 1000)
  * @property {number} maxExecutionTime - Maximum execution time in ms (default: 5000, 0 = unlimited)
+ * @property {boolean} autoMemoize - If true, all lambda functions are automatically memoized (default: false)
  */
 
 /**
@@ -33,7 +34,8 @@ const defaultOptions = {
   strictMode: false,
   warnDeprecated: true,
   maxRecursionDepth: 1000,
-  maxExecutionTime: 5000  // 5 seconds
+  maxExecutionTime: 5000,  // 5 seconds
+  autoMemoize: false       // Auto-memoize all lambdas
 };
 
 /**
@@ -85,6 +87,182 @@ function checkLimits(opts) {
  * @type {Set<string>}
  */
 const shownWarnings = new Set();
+
+// ============================================
+// Argument Evaluation (Performance Optimization)
+// ============================================
+
+/**
+ * Evaluate arguments into a fresh array using a for loop instead of .map()
+ * This avoids closure allocation overhead in hot paths.
+ * 
+ * NOTE: Array pooling was considered but doesn't work because evaluate()
+ * can be called recursively during argument evaluation, which would
+ * overwrite the pooled array before it's consumed.
+ * 
+ * @param {Array} args - Unevaluated argument expressions
+ * @param {Environment|Object} env - Environment for evaluation
+ * @param {EvaluatorOptions} opts - Evaluator options
+ * @returns {Array} Evaluated arguments in a new array
+ * @private
+ */
+function evaluateArgsFresh(args, env, opts) {
+  const len = args.length;
+  const result = new Array(len);
+  for (let i = 0; i < len; i++) {
+    result[i] = evaluate(args[i], env, opts);
+  }
+  return result;
+}
+
+// ============================================
+// Memoization Support
+// ============================================
+
+/**
+ * Create a cache key from function arguments.
+ * Uses JSON.stringify for primitives and arrays/objects.
+ * Functions cannot be meaningfully hashed, so they use identity.
+ * 
+ * @param {Array} args - Arguments to create key from
+ * @returns {string} Cache key
+ * @private
+ */
+function makeMemoKey(args) {
+  // Fast path for common cases (0-2 primitive args)
+  const len = args.length;
+  if (len === 0) return '[]';
+  if (len === 1) {
+    const a = args[0];
+    const t = typeof a;
+    if (t === 'number' || t === 'boolean' || a === null) {
+      return String(a);
+    }
+    if (t === 'string') {
+      return JSON.stringify(a);
+    }
+  }
+  if (len === 2) {
+    const a = args[0], b = args[1];
+    const ta = typeof a, tb = typeof b;
+    if ((ta === 'number' || ta === 'boolean' || a === null) &&
+        (tb === 'number' || tb === 'boolean' || b === null)) {
+      return `${a},${b}`;
+    }
+  }
+  
+  // General case: use JSON.stringify with a replacer for functions
+  return JSON.stringify(args, (key, value) => {
+    if (typeof value === 'function') {
+      // Functions can't be serialized; use a unique marker
+      return `__fn_${value.name || 'anonymous'}__`;
+    }
+    return value;
+  });
+}
+
+// ============================================
+// Environment Class (Performance Optimization)
+// ============================================
+
+/**
+ * Environment class for efficient variable bindings with parent chain lookup.
+ * Uses Map internally for faster lookups than plain objects.
+ * 
+ * @class
+ */
+class Environment {
+  /**
+   * Create a new environment
+   * @param {Environment|null} parent - Parent environment for scope chain
+   */
+  constructor(parent = null) {
+    /** @type {Map<string, *>} */
+    this.bindings = new Map();
+    /** @type {Environment|null} */
+    this.parent = parent;
+  }
+
+  /**
+   * Look up a variable in this environment or parent chain
+   * @param {string} name - Variable name
+   * @returns {*} The value, or undefined if not found
+   */
+  get(name) {
+    if (this.bindings.has(name)) {
+      return this.bindings.get(name);
+    }
+    if (this.parent) {
+      return this.parent.get(name);
+    }
+    return undefined;
+  }
+
+  /**
+   * Check if a variable exists in this environment or parent chain
+   * @param {string} name - Variable name
+   * @returns {boolean} True if the variable exists
+   */
+  has(name) {
+    if (this.bindings.has(name)) {
+      return true;
+    }
+    if (this.parent) {
+      return this.parent.has(name);
+    }
+    return false;
+  }
+
+  /**
+   * Set a variable in this environment
+   * @param {string} name - Variable name
+   * @param {*} value - Variable value
+   */
+  set(name, value) {
+    this.bindings.set(name, value);
+  }
+
+  /**
+   * Create a child environment extending this one
+   * @returns {Environment} New environment with this as parent
+   */
+  extend() {
+    return new Environment(this);
+  }
+
+  /**
+   * Create an environment from a plain object (for backwards compatibility)
+   * @param {Object} obj - Plain object with variable bindings
+   * @param {Environment|null} parent - Optional parent environment
+   * @returns {Environment} New environment with the object's bindings
+   * @static
+   */
+  static fromObject(obj, parent = null) {
+    const env = new Environment(parent);
+    if (obj && typeof obj === 'object') {
+      for (const [key, value] of Object.entries(obj)) {
+        env.set(key, value);
+      }
+    }
+    return env;
+  }
+
+  /**
+   * Convert environment to plain object (for debugging/serialization)
+   * @param {boolean} includeParent - Whether to include parent bindings
+   * @returns {Object} Plain object representation
+   */
+  toObject(includeParent = false) {
+    const obj = {};
+    if (includeParent && this.parent) {
+      Object.assign(obj, this.parent.toObject(true));
+    }
+    for (const [key, value] of this.bindings) {
+      obj[key] = value;
+    }
+    return obj;
+  }
+}
 
 // ============================================
 // Error Types
@@ -205,20 +383,43 @@ class LambdaJSONError extends Error {
 
 /**
  * Global environment containing built-in operators and functions
+ * This is stored as a plain object for backwards compatibility,
+ * but wrapped in an Environment for internal use.
  * @type {Object.<string, Function>}
  */
-const globalEnv = {
+const globalEnvBindings = {
   /**
    * Addition operator - supports numbers and strings
+   * Optimized to avoid intermediate allocations
    * @param {Array} args - Arguments to add
    * @returns {number|string} Sum of arguments
    */
   '+': (args) => {
-    if (args.length === 0) return 0;
-    if (args.every((a) => typeof a === 'number')) {
-      return args.reduce((acc, val) => acc + val, 0);
-    } else if (args.every((a) => typeof a === 'string')) {
-      return args.reduce((acc, val) => acc + val, '');
+    const len = args.length;
+    if (len === 0) return 0;
+    
+    // Fast path: check first element type and accumulate
+    const first = args[0];
+    if (typeof first === 'number') {
+      let sum = first;
+      for (let i = 1; i < len; i++) {
+        const a = args[i];
+        if (typeof a !== 'number') {
+          throw new Error('Type mismatch: + requires all numbers or all strings');
+        }
+        sum += a;
+      }
+      return sum;
+    } else if (typeof first === 'string') {
+      let result = first;
+      for (let i = 1; i < len; i++) {
+        const a = args[i];
+        if (typeof a !== 'string') {
+          throw new Error('Type mismatch: + requires all numbers or all strings');
+        }
+        result += a;
+      }
+      return result;
     } else {
       throw new Error('Type mismatch: + requires all numbers or all strings');
     }
@@ -226,46 +427,84 @@ const globalEnv = {
 
   /**
    * Subtraction operator
+   * Optimized to avoid intermediate allocations
    * @param {Array<number>} args - Numbers to subtract
    * @returns {number} Difference of arguments
    */
   '-': (args) => {
-    if (args.length === 0) return 0;
-    if (!args.every((a) => typeof a === 'number')) {
+    const len = args.length;
+    if (len === 0) return 0;
+    
+    const first = args[0];
+    if (typeof first !== 'number') {
       throw new Error('Type error: - requires numeric arguments');
     }
-    return args.length === 1 ? -args[0] : args.reduce((acc, val) => acc - val);
+    
+    if (len === 1) return -first;
+    
+    let result = first;
+    for (let i = 1; i < len; i++) {
+      const a = args[i];
+      if (typeof a !== 'number') {
+        throw new Error('Type error: - requires numeric arguments');
+      }
+      result -= a;
+    }
+    return result;
   },
 
   /**
    * Multiplication operator
+   * Optimized to avoid intermediate allocations
    * @param {Array<number>} args - Numbers to multiply
    * @returns {number} Product of arguments
    */
   '*': (args) => {
-    if (args.length === 0) return 1;
-    if (!args.every((a) => typeof a === 'number')) {
-      throw new Error('Type error: * requires numeric arguments');
+    const len = args.length;
+    if (len === 0) return 1;
+    
+    let product = 1;
+    for (let i = 0; i < len; i++) {
+      const a = args[i];
+      if (typeof a !== 'number') {
+        throw new Error('Type error: * requires numeric arguments');
+      }
+      product *= a;
     }
-    return args.reduce((acc, val) => acc * val, 1);
+    return product;
   },
 
   /**
    * Division operator
+   * Optimized to avoid intermediate allocations
    * @param {Array<number>} args - Numbers to divide
    * @returns {number} Quotient of arguments
    */
   '/': (args) => {
-    if (args.length === 0) {
+    const len = args.length;
+    if (len === 0) {
       throw new Error('Division requires at least one argument');
     }
-    if (!args.every((a) => typeof a === 'number')) {
+    
+    const first = args[0];
+    if (typeof first !== 'number') {
       throw new Error('Type error: / requires numeric arguments');
     }
-    if (args.slice(1).some(val => val === 0)) {
-      throw new Error('Division by zero');
+    
+    if (len === 1) return first;
+    
+    let result = first;
+    for (let i = 1; i < len; i++) {
+      const a = args[i];
+      if (typeof a !== 'number') {
+        throw new Error('Type error: / requires numeric arguments');
+      }
+      if (a === 0) {
+        throw new Error('Division by zero');
+      }
+      result /= a;
     }
-    return args.reduce((acc, val) => acc / val);
+    return result;
   },
 
   /**
@@ -310,17 +549,30 @@ const globalEnv = {
 
   /**
    * Modulo operator
+   * Optimized to avoid intermediate allocations
    * @param {Array<number>} args - Numbers for modulo operation
    * @returns {number} Result of successive modulo operations
    */
   '%': (args) => {
-    if (args.length < 2) {
+    const len = args.length;
+    if (len < 2) {
       throw new Error('% requires at least 2 arguments');
     }
-    if (!args.every((a) => typeof a === 'number')) {
+    
+    const first = args[0];
+    if (typeof first !== 'number') {
       throw new Error('Type error: % requires numeric arguments');
     }
-    return args.reduce((acc, val) => acc % val);
+    
+    let result = first;
+    for (let i = 1; i < len; i++) {
+      const a = args[i];
+      if (typeof a !== 'number') {
+        throw new Error('Type error: % requires numeric arguments');
+      }
+      result %= a;
+    }
+    return result;
   },
 
   /**
@@ -673,6 +925,39 @@ const globalEnv = {
 };
 
 /**
+ * Global environment instance wrapping the built-in bindings
+ * @type {Environment}
+ */
+const globalEnv = Environment.fromObject(globalEnvBindings);
+
+/**
+ * Backwards-compatible global environment object accessor
+ * Allows direct property access like globalEnv['+']
+ * @type {Object.<string, Function>}
+ */
+const globalEnvProxy = new Proxy(globalEnvBindings, {
+  get(target, prop) {
+    if (typeof prop === 'string') {
+      return globalEnv.get(prop);
+    }
+    return target[prop];
+  },
+  set(target, prop, value) {
+    if (typeof prop === 'string') {
+      globalEnv.set(prop, value);
+      target[prop] = value;
+    }
+    return true;
+  },
+  has(target, prop) {
+    if (typeof prop === 'string') {
+      return globalEnv.has(prop);
+    }
+    return prop in target;
+  }
+});
+
+/**
  * List of primitive operators that receive arguments as arrays
  * @type {Array<string>}
  */
@@ -702,10 +987,45 @@ function warnDeprecated(feature, message, options) {
 }
 
 /**
+ * Helper to look up a variable in an environment (supports both Environment class and plain objects)
+ * @param {string} name - Variable name
+ * @param {Environment|Object} env - Environment to search
+ * @returns {*} The value, or undefined if not found
+ * @private
+ */
+function envLookup(name, env) {
+  // Environment class
+  if (env instanceof Environment) {
+    const val = env.get(name);
+    if (val !== undefined) return val;
+    return globalEnv.get(name);
+  }
+  // Plain object (backwards compatible)
+  if (env && env[name] !== undefined) {
+    return env[name];
+  }
+  return globalEnv.get(name);
+}
+
+/**
+ * Helper to check if a variable exists in an environment
+ * @param {string} name - Variable name
+ * @param {Environment|Object} env - Environment to search
+ * @returns {boolean} True if the variable exists
+ * @private
+ */
+function envHas(name, env) {
+  if (env instanceof Environment) {
+    return env.has(name) || globalEnv.has(name);
+  }
+  return (env && env[name] !== undefined) || globalEnv.has(name);
+}
+
+/**
  * Evaluates a λ.json expression in the given environment
  * 
  * @param {*} exp - The expression to evaluate
- * @param {Object} env - The environment containing variable bindings
+ * @param {Environment|Object} env - The environment containing variable bindings
  * @param {EvaluatorOptions} [options] - Optional evaluation settings
  * @returns {*} The result of evaluating the expression
  * @throws {Error} If the expression is invalid or evaluation fails
@@ -758,12 +1078,10 @@ function evaluateInternal(exp, env, opts) {
       );
       return exp.substring(1);
     }
-    // Variable lookup
-    if (env[exp] !== undefined) {
-      return env[exp];
-    }
-    if (globalEnv[exp] !== undefined) {
-      return globalEnv[exp];
+    // Variable lookup using unified helper
+    const value = envLookup(exp, env);
+    if (value !== undefined) {
+      return value;
     }
     // In strict mode, unbound symbols throw an error
     if (opts.strictMode) {
@@ -796,8 +1114,11 @@ function evaluateInternal(exp, env, opts) {
       if (typeof variable !== 'string') {
         throw new Error('define requires a string variable name');
       }
-      globalEnv[variable] = evaluate(value, env, opts);
-      return globalEnv[variable];
+      const evaluatedValue = evaluate(value, env, opts);
+      globalEnv.set(variable, evaluatedValue);
+      // Also update the bindings object for backwards compatibility
+      globalEnvBindings[variable] = evaluatedValue;
+      return evaluatedValue;
     }
 
     if (operator === 'lambda' || operator === 'λ') {
@@ -808,15 +1129,40 @@ function evaluateInternal(exp, env, opts) {
       if (!Array.isArray(parameters)) {
         throw new Error('lambda parameters must be an array');
       }
-      // Capture opts in closure for consistent behavior
+      // Capture opts and environment in closure for consistent behavior
       const capturedOpts = opts;
-      return (...evalArgs) => {
-        const localEnv = { ...globalEnv, ...env };
-        parameters.forEach((param, index) => {
-          localEnv[param] = evalArgs[index];
-        });
+      // Convert env to Environment if it's a plain object
+      const capturedEnv = env instanceof Environment 
+        ? env 
+        : Environment.fromObject(env, globalEnv);
+      
+      const baseFn = (...evalArgs) => {
+        // Create new environment extending the captured one
+        const localEnv = capturedEnv.extend();
+        for (let i = 0; i < parameters.length; i++) {
+          localEnv.set(parameters[i], evalArgs[i]);
+        }
         return evaluate(body, localEnv, capturedOpts);
       };
+      
+      // Auto-memoize if option is enabled
+      if (opts.autoMemoize) {
+        const cache = new Map();
+        const memoizedFn = (...callArgs) => {
+          const key = makeMemoKey(callArgs);
+          if (cache.has(key)) {
+            return cache.get(key);
+          }
+          const result = baseFn(...callArgs);
+          cache.set(key, result);
+          return result;
+        };
+        memoizedFn._memoCache = cache;
+        memoizedFn._isMemoized = true;
+        return memoizedFn;
+      }
+      
+      return baseFn;
     }
 
     if (operator === 'if') {
@@ -854,14 +1200,20 @@ function evaluateInternal(exp, env, opts) {
       if (!Array.isArray(bindings)) {
         throw new Error('let bindings must be an array');
       }
-      const localEnv = { ...env };
-      bindings.forEach((binding) => {
+      // Convert env to Environment if needed and extend it
+      const baseEnv = env instanceof Environment 
+        ? env 
+        : Environment.fromObject(env, globalEnv);
+      const localEnv = baseEnv.extend();
+      
+      for (const binding of bindings) {
         if (!Array.isArray(binding) || binding.length !== 2) {
           throw new Error('let binding must be [variable, value]');
         }
         const [variable, value] = binding;
-        localEnv[variable] = evaluate(value, env, opts);
-      });
+        // Evaluate in original env (parallel let bindings)
+        localEnv.set(variable, evaluate(value, env, opts));
+      }
       return evaluate(body, localEnv, opts);
     }
 
@@ -873,14 +1225,20 @@ function evaluateInternal(exp, env, opts) {
       if (!Array.isArray(bindings)) {
         throw new Error('let* bindings must be an array');
       }
-      const localEnv = { ...env };
-      bindings.forEach((binding) => {
+      // Convert env to Environment if needed and extend it
+      const baseEnv = env instanceof Environment 
+        ? env 
+        : Environment.fromObject(env, globalEnv);
+      const localEnv = baseEnv.extend();
+      
+      for (const binding of bindings) {
         if (!Array.isArray(binding) || binding.length !== 2) {
           throw new Error('let* binding must be [variable, value]');
         }
         const [variable, value] = binding;
-        localEnv[variable] = evaluate(value, localEnv, opts);
-      });
+        // Evaluate in localEnv (sequential let* bindings)
+        localEnv.set(variable, evaluate(value, localEnv, opts));
+      }
       return evaluate(body, localEnv, opts);
     }
 
@@ -889,6 +1247,40 @@ function evaluateInternal(exp, env, opts) {
         throw new Error('quote requires exactly one argument');
       }
       return args[0];
+    }
+
+    // Memoization special form for caching pure function results
+    if (operator === 'memoize') {
+      if (args.length !== 1) {
+        throw new Error('memoize requires exactly one argument (a function)');
+      }
+      const fn = evaluate(args[0], env, opts);
+      if (typeof fn !== 'function') {
+        throw new Error('memoize requires a function argument');
+      }
+      
+      // Create a cache for this memoized function
+      const cache = new Map();
+      
+      // Return a wrapper function that checks the cache before calling
+      const memoizedFn = (...callArgs) => {
+        // Create a cache key from the arguments
+        const key = makeMemoKey(callArgs);
+        
+        if (cache.has(key)) {
+          return cache.get(key);
+        }
+        
+        const result = fn(...callArgs);
+        cache.set(key, result);
+        return result;
+      };
+      
+      // Attach cache for debugging/clearing
+      memoizedFn._memoCache = cache;
+      memoizedFn._isMemoized = true;
+      
+      return memoizedFn;
     }
 
     if (operator === 'eq?') {
@@ -1194,13 +1586,17 @@ function evaluateInternal(exp, env, opts) {
 
     // Function application
     const evaluatedOperator = evaluate(operator, env, opts);
-    const evaluatedArgs = args.map((arg) => evaluate(arg, env, opts));
 
     if (typeof evaluatedOperator === 'function') {
       // Special handling for logical operators that need environment
       if (operator === 'and' || operator === 'or' || operator === 'not') {
         return evaluatedOperator(args, env);
       }
+      // All function calls need fresh arrays because evaluation can be recursive
+      // (the pooled array approach doesn't work when evaluate() can be called
+      // recursively during argument evaluation, overwriting the pooled array)
+      const evaluatedArgs = evaluateArgsFresh(args, env, opts);
+      
       // Primitive operators receive args as array
       if (primitiveOps.includes(operator)) {
         return evaluatedOperator(evaluatedArgs);
@@ -1377,8 +1773,11 @@ function getVersion() {
 
 module.exports = { 
   // Core
-  globalEnv, 
+  globalEnv: globalEnvProxy,  // Backwards-compatible proxy
   evaluate, 
+  
+  // Environment class for advanced usage
+  Environment,
   
   // Document processing
   processDocument,
