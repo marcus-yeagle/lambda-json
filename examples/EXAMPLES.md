@@ -200,4 +200,43 @@ Using `let*` for sequential variable bindings:
 
 - `fibonacci.json` - Comprehensive collection of Fibonacci implementations
 - `test-fibonacci.js` - Executable test script demonstrating all examples
+- `meta-interpreter.json` - **Meta-circular interpreter**: a λJSON interpreter written in λJSON!
+- `test-meta-interpreter.js` - Tests for the meta-circular interpreter
 - `../README.md` - Main λ.json documentation
+
+## Meta-Circular Interpreter
+
+The `meta-interpreter.json` file contains a λJSON interpreter written in λJSON itself. This is a classic exercise in programming language theory demonstrating the homoiconicity of the language.
+
+### Features Supported
+
+The meta-interpreter can evaluate:
+- Numbers, booleans, null, and objects (self-evaluating)
+- Quoted expressions (`["quote", ...]`)
+- Conditionals (`if`, `cond`)
+- Variable bindings (`let`, `let*`)
+- Lambda expressions and closures (`λ`, `lambda`)
+- Boolean operators (`and`, `or`, `not`)
+- Arithmetic (`+`, `-`, `*`, `/`, `%`)
+- Comparisons (`>`, `<`, `>=`, `<=`, `eq?`)
+- List operations (`car`, `cdr`, `cons`, `nth`, `list`)
+- Type predicates (`null?`, `number?`, `string?`, `list?`, etc.)
+
+### Example Usage
+
+```javascript
+// After loading the interpreter definitions:
+["meta-eval",
+  ["quote",
+    ["let", [["x", 10], ["y", 20]], ["+", "x", "y"]]
+  ],
+  []
+]
+// Returns: 30
+```
+
+### Running the Tests
+
+```bash
+node examples/test-meta-interpreter.js
+```

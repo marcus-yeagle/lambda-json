@@ -1,0 +1,73 @@
+{
+  "name": "Core - Literal Values",
+  "description": "Tests for self-evaluating literal values",
+  "version": "1.0.0",
+  "tests": [
+    {
+      "name": "number-integer-positive",
+      "expression": 42,
+      "expected": 42
+    },
+    {
+      "name": "number-integer-negative",
+      "expression": -17,
+      "expected": -17
+    },
+    {
+      "name": "number-zero",
+      "expression": 0,
+      "expected": 0
+    },
+    {
+      "name": "number-float",
+      "expression": 3.14159,
+      "expected": 3.14159
+    },
+    {
+      "name": "boolean-true",
+      "expression": true,
+      "expected": true
+    },
+    {
+      "name": "boolean-false",
+      "expression": false,
+      "expected": false
+    },
+    {
+      "name": "null-value",
+      "expression": null,
+      "expected": null
+    },
+    {
+      "name": "empty-array",
+      "expression": [],
+      "expected": []
+    },
+    {
+      "name": "empty-object",
+      "expression": {},
+      "expected": {}
+    },
+    {
+      "name": "object-with-values",
+      "expression": {"a": 1, "b": 2},
+      "expected": {"a": 1, "b": 2}
+    },
+    {
+      "name": "quoted-string",
+      "expression": ["quote", "hello"],
+      "expected": "hello"
+    },
+    {
+      "name": "quoted-array",
+      "expression": ["quote", [1, 2, 3]],
+      "expected": [1, 2, 3]
+    },
+    {
+      "name": "quoted-nested",
+      "expression": ["quote", ["a", "b", "c"]],
+      "expected": ["a", "b", "c"]
+    }
+  ]
+}
+

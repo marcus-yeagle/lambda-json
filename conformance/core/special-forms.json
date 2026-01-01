@@ -1,0 +1,100 @@
+{
+  "name": "Core - Special Forms",
+  "description": "Tests for special form evaluation",
+  "version": "1.0.0",
+  "tests": [
+    {
+      "name": "if-true-branch",
+      "expression": ["if", true, 1, 2],
+      "expected": 1
+    },
+    {
+      "name": "if-false-branch",
+      "expression": ["if", false, 1, 2],
+      "expected": 2
+    },
+    {
+      "name": "if-condition-evaluation",
+      "expression": ["if", [">", 5, 3], ["quote", "yes"], ["quote", "no"]],
+      "expected": "yes"
+    },
+    {
+      "name": "cond-first-match",
+      "expression": ["cond", [true, 1], [true, 2]],
+      "expected": 1
+    },
+    {
+      "name": "cond-second-match",
+      "expression": ["cond", [false, 1], [true, 2]],
+      "expected": 2
+    },
+    {
+      "name": "cond-else-clause",
+      "expression": ["cond", [false, 1], [false, 2], ["else", 3]],
+      "expected": 3
+    },
+    {
+      "name": "cond-with-expressions",
+      "expression": ["cond", [["eq?", 1, 2], ["quote", "equal"]], ["else", ["quote", "not-equal"]]],
+      "expected": "not-equal"
+    },
+    {
+      "name": "let-single-binding",
+      "expression": ["let", [["x", 5]], "x"],
+      "expected": 5
+    },
+    {
+      "name": "let-multiple-bindings",
+      "expression": ["let", [["x", 2], ["y", 3]], ["+", "x", "y"]],
+      "expected": 5
+    },
+    {
+      "name": "let-parallel-binding",
+      "description": "In let, bindings are parallel - x cannot see y's new value",
+      "expression": ["let", [["x", 1], ["y", 10]], ["+", "x", "y"]],
+      "expected": 11
+    },
+    {
+      "name": "let-star-sequential",
+      "description": "In let*, later bindings can see earlier ones",
+      "expression": ["let*", [["x", 5], ["y", ["+", "x", 1]]], "y"],
+      "expected": 6
+    },
+    {
+      "name": "let-star-chain",
+      "expression": ["let*", [["a", 1], ["b", ["+", "a", 1]], ["c", ["+", "b", 1]]], "c"],
+      "expected": 3
+    },
+    {
+      "name": "lambda-identity",
+      "expression": [["λ", ["x"], "x"], 42],
+      "expected": 42
+    },
+    {
+      "name": "lambda-addition",
+      "expression": [["λ", ["x", "y"], ["+", "x", "y"]], 3, 4],
+      "expected": 7
+    },
+    {
+      "name": "lambda-no-params",
+      "expression": [["λ", [], 42]],
+      "expected": 42
+    },
+    {
+      "name": "lambda-keyword",
+      "expression": [["lambda", ["n"], ["*", "n", 2]], 5],
+      "expected": 10
+    },
+    {
+      "name": "quote-preserves-array",
+      "expression": ["quote", [1, 2, 3]],
+      "expected": [1, 2, 3]
+    },
+    {
+      "name": "quote-preserves-string",
+      "expression": ["quote", "hello"],
+      "expected": "hello"
+    }
+  ]
+}
+

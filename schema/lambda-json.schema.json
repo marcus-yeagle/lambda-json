@@ -1,0 +1,277 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://lambda-json.org/schema/v1.0/lambda-json.schema.json",
+  "title": "λJSON Document",
+  "description": "Schema for λJSON (Lambda JSON) - a Turing-complete, homoiconic strict subset of JSON",
+  "version": "1.0.0",
+  
+  "definitions": {
+    "expression": {
+      "description": "A λJSON expression - the fundamental unit of the language",
+      "oneOf": [
+        { "$ref": "#/definitions/number" },
+        { "$ref": "#/definitions/boolean" },
+        { "$ref": "#/definitions/null" },
+        { "$ref": "#/definitions/string" },
+        { "$ref": "#/definitions/list" },
+        { "$ref": "#/definitions/object" }
+      ]
+    },
+    
+    "number": {
+      "description": "JSON number - IEEE 754 double-precision floating point",
+      "type": "number"
+    },
+    
+    "boolean": {
+      "description": "Boolean literal - true or false",
+      "type": "boolean"
+    },
+    
+    "null": {
+      "description": "Null literal",
+      "type": "null"
+    },
+    
+    "string": {
+      "description": "JSON string - interpreted as symbol (variable reference) or literal (if prefixed with ')",
+      "type": "string"
+    },
+    
+    "symbol": {
+      "description": "A symbol (variable reference) - a string that doesn't start with single quote",
+      "type": "string",
+      "pattern": "^(?!').*$"
+    },
+    
+    "quotedString": {
+      "description": "A string literal - a string that starts with single quote (')",
+      "type": "string",
+      "pattern": "^'.*$"
+    },
+    
+    "list": {
+      "description": "A list (array) - used for function application and special forms",
+      "type": "array",
+      "items": {
+        "$ref": "#/definitions/expression"
+      }
+    },
+    
+    "object": {
+      "description": "A JSON object - for structured data",
+      "type": "object",
+      "additionalProperties": {
+        "$ref": "#/definitions/expression"
+      }
+    },
+    
+    "specialForm": {
+      "description": "Special form keywords that have special evaluation rules",
+      "type": "string",
+      "enum": ["define", "lambda", "λ", "if", "cond", "let", "let*", "quote", "else"]
+    },
+    
+    "builtinOperator": {
+      "description": "Built-in operator names",
+      "type": "string",
+      "enum": [
+        "+", "-", "*", "/", "%",
+        ">", "<", ">=", "<=", "eq?",
+        "and", "or", "not",
+        "abs", "min", "max", "floor", "ceil", "round",
+        "null?", "list?", "number?", "string?", "boolean?", "object?", "function?",
+        "map", "filter", "reduce", "length",
+        "get", "keys", "values", "assoc", "dissoc", "merge",
+        "cons-stream", "head", "tail", "take", "delay", "force",
+        "enum-stream", "map-stream", "filter-stream",
+        "divides?"
+      ]
+    },
+    
+    "defineForm": {
+      "description": "Variable definition: [\"define\", symbol, expression]",
+      "type": "array",
+      "minItems": 3,
+      "maxItems": 3,
+      "items": [
+        { "const": "define" },
+        { "$ref": "#/definitions/symbol" },
+        { "$ref": "#/definitions/expression" }
+      ]
+    },
+    
+    "lambdaForm": {
+      "description": "Lambda expression: [\"λ\", [params...], body] or [\"lambda\", [params...], body]",
+      "type": "array",
+      "minItems": 3,
+      "maxItems": 3,
+      "items": [
+        { "enum": ["lambda", "λ"] },
+        { 
+          "type": "array",
+          "items": { "$ref": "#/definitions/symbol" }
+        },
+        { "$ref": "#/definitions/expression" }
+      ]
+    },
+    
+    "ifForm": {
+      "description": "Conditional: [\"if\", condition, trueBranch, falseBranch]",
+      "type": "array",
+      "minItems": 4,
+      "maxItems": 4,
+      "items": [
+        { "const": "if" },
+        { "$ref": "#/definitions/expression" },
+        { "$ref": "#/definitions/expression" },
+        { "$ref": "#/definitions/expression" }
+      ]
+    },
+    
+    "condClause": {
+      "description": "A cond clause: [condition, result] or [\"else\", result]",
+      "type": "array",
+      "minItems": 2,
+      "maxItems": 2,
+      "items": [
+        { "$ref": "#/definitions/expression" },
+        { "$ref": "#/definitions/expression" }
+      ]
+    },
+    
+    "condForm": {
+      "description": "Multi-way conditional: [\"cond\", clause1, clause2, ...]",
+      "type": "array",
+      "minItems": 2,
+      "items": [
+        { "const": "cond" }
+      ],
+      "additionalItems": {
+        "$ref": "#/definitions/condClause"
+      }
+    },
+    
+    "binding": {
+      "description": "A variable binding: [symbol, expression]",
+      "type": "array",
+      "minItems": 2,
+      "maxItems": 2,
+      "items": [
+        { "$ref": "#/definitions/symbol" },
+        { "$ref": "#/definitions/expression" }
+      ]
+    },
+    
+    "letForm": {
+      "description": "Local bindings (parallel): [\"let\", [[var, val], ...], body]",
+      "type": "array",
+      "minItems": 3,
+      "maxItems": 3,
+      "items": [
+        { "const": "let" },
+        {
+          "type": "array",
+          "items": { "$ref": "#/definitions/binding" }
+        },
+        { "$ref": "#/definitions/expression" }
+      ]
+    },
+    
+    "letStarForm": {
+      "description": "Local bindings (sequential): [\"let*\", [[var, val], ...], body]",
+      "type": "array",
+      "minItems": 3,
+      "maxItems": 3,
+      "items": [
+        { "const": "let*" },
+        {
+          "type": "array",
+          "items": { "$ref": "#/definitions/binding" }
+        },
+        { "$ref": "#/definitions/expression" }
+      ]
+    },
+    
+    "quoteForm": {
+      "description": "Quotation: [\"quote\", expression]",
+      "type": "array",
+      "minItems": 2,
+      "maxItems": 2,
+      "items": [
+        { "const": "quote" },
+        { "$ref": "#/definitions/expression" }
+      ]
+    },
+    
+    "application": {
+      "description": "Function application: [operator, arg1, arg2, ...]",
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "$ref": "#/definitions/expression"
+      }
+    }
+  },
+  
+  "oneOf": [
+    {
+      "description": "A standalone λJSON expression",
+      "$ref": "#/definitions/expression"
+    },
+    {
+      "description": "A λJSON document with data and code",
+      "type": "object",
+      "properties": {
+        "$schema": {
+          "type": "string",
+          "description": "Optional schema reference"
+        },
+        "$version": {
+          "type": "string",
+          "description": "λJSON specification version",
+          "pattern": "^[0-9]+\\.[0-9]+(\\.[0-9]+)?$"
+        },
+        "data": {
+          "$ref": "#/definitions/expression",
+          "description": "Input data for the code to process"
+        },
+        "code": {
+          "$ref": "#/definitions/expression",
+          "description": "λJSON code (typically a lambda) to apply to data"
+        },
+        "result": {
+          "$ref": "#/definitions/expression",
+          "description": "Output result (populated after evaluation)"
+        }
+      }
+    }
+  ],
+  
+  "examples": [
+    {
+      "description": "Simple arithmetic",
+      "expression": ["+", 1, 2, 3]
+    },
+    {
+      "description": "Lambda expression",
+      "expression": ["λ", ["x"], ["*", "x", "x"]]
+    },
+    {
+      "description": "Document with data and code",
+      "expression": {
+        "data": [1, 2, 3, 4],
+        "code": ["λ", ["nums"], ["/", ["reduce", ["λ", ["acc", "curr"], ["+", "acc", "curr"]], "nums"], ["length", "nums"]]]
+      }
+    },
+    {
+      "description": "Conditional expression",
+      "expression": ["if", [">", 5, 3], "'yes", "'no"]
+    },
+    {
+      "description": "Define a function",
+      "expression": ["define", "square", ["λ", ["n"], ["*", "n", "n"]]]
+    }
+  ]
+}
+

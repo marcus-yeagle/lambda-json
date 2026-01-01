@@ -1,0 +1,108 @@
+{
+  "name": "Standard Library - Comparison",
+  "description": "Tests for comparison operators",
+  "version": "1.0.0",
+  "tests": [
+    {
+      "name": "greater-than-true",
+      "expression": [">", 5, 3],
+      "expected": true
+    },
+    {
+      "name": "greater-than-false",
+      "expression": [">", 3, 5],
+      "expected": false
+    },
+    {
+      "name": "greater-than-equal-false",
+      "expression": [">", 5, 5],
+      "expected": false
+    },
+    {
+      "name": "greater-than-chain-true",
+      "expression": [">", 10, 5, 3, 1],
+      "expected": true
+    },
+    {
+      "name": "greater-than-chain-false",
+      "expression": [">", 10, 5, 7, 1],
+      "expected": false
+    },
+    {
+      "name": "less-than-true",
+      "expression": ["<", 3, 5],
+      "expected": true
+    },
+    {
+      "name": "less-than-false",
+      "expression": ["<", 5, 3],
+      "expected": false
+    },
+    {
+      "name": "less-than-chain-true",
+      "expression": ["<", 1, 3, 5, 10],
+      "expected": true
+    },
+    {
+      "name": "greater-equal-true-greater",
+      "expression": [">=", 5, 3],
+      "expected": true
+    },
+    {
+      "name": "greater-equal-true-equal",
+      "expression": [">=", 5, 5],
+      "expected": true
+    },
+    {
+      "name": "greater-equal-false",
+      "expression": [">=", 3, 5],
+      "expected": false
+    },
+    {
+      "name": "less-equal-true-less",
+      "expression": ["<=", 3, 5],
+      "expected": true
+    },
+    {
+      "name": "less-equal-true-equal",
+      "expression": ["<=", 5, 5],
+      "expected": true
+    },
+    {
+      "name": "less-equal-false",
+      "expression": ["<=", 5, 3],
+      "expected": false
+    },
+    {
+      "name": "eq-numbers-true",
+      "expression": ["eq?", 5, 5],
+      "expected": true
+    },
+    {
+      "name": "eq-numbers-false",
+      "expression": ["eq?", 5, 6],
+      "expected": false
+    },
+    {
+      "name": "eq-booleans-true",
+      "expression": ["eq?", true, true],
+      "expected": true
+    },
+    {
+      "name": "eq-booleans-false",
+      "expression": ["eq?", true, false],
+      "expected": false
+    },
+    {
+      "name": "eq-null",
+      "expression": ["eq?", null, null],
+      "expected": true
+    },
+    {
+      "name": "eq-strings",
+      "expression": ["eq?", ["quote", "hello"], ["quote", "hello"]],
+      "expected": true
+    }
+  ]
+}
+
