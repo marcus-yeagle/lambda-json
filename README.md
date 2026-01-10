@@ -113,6 +113,12 @@ npm run cli
 - `and`: A special form for logical conjunction
 - `or`: A special form for logical disjunction
 
+### Binding Forms
+
+- `let`: Parallel binding - all values evaluated in outer scope
+- `let*`: Sequential binding - each value can reference previous bindings
+- `letrec`: Recursive binding - allows self and mutual recursion
+
 ## Examples
 
 1. Simple Arithmetic:
@@ -207,6 +213,21 @@ Output: true
 ```λ-JSON
 λ.json -> ['or', true, false, true]
 Output: true
+```
+
+7. Binding Forms (let, let\*, letrec):
+
+```λ-JSON
+λ.json -> ['let', [['a', 3], ['b', 4]], ['+', 'a', 'b']]
+Output: 7
+
+λ.json -> ['let*', [['a', 3], ['b', ['+', 'a', 1]]], ['+', 'a', 'b']]
+Output: 7
+
+λ.json -> ['letrec', [['fact', ['λ', ['n'],
+            ['if', ['<', 'n', 2], 1,
+              ['*', 'n', ['fact', ['-', 'n', 1]]]]]]], ['fact', 5]]
+Output: 120
 ```
 
 ## Exiting the REPL

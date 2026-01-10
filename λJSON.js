@@ -125,6 +125,20 @@ function evaluate(exp, env) {
         localEnv[variable] = evaluate(value, localEnv);
       });
       return evaluate(body, localEnv);
+    } else if (operator === 'letrec') {
+      // letrec allows mutually recursive bindings
+      // All bindings are visible to all value expressions
+      const [bindings, body] = args;
+      const localEnv = { ...env };
+      // First pass: create placeholders for all bindings
+      bindings.forEach(([variable, _]) => {
+        localEnv[variable] = undefined;
+      });
+      // Second pass: evaluate all values in the new environment
+      bindings.forEach(([variable, value]) => {
+        localEnv[variable] = evaluate(value, localEnv);
+      });
+      return evaluate(body, localEnv);
     } else if (operator === 'quote') {
       return args[0]; // Return the unevaluated value as a literal
     } else if (operator === 'eq?') {
