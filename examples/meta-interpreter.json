@@ -1,0 +1,671 @@
+{
+  "description": "Meta-circular λJSON Interpreter - An interpreter for λJSON written in λJSON itself",
+  "version": "1.0.0",
+  "author": "λJSON Project",
+  
+  "notes": [
+    "This is a meta-circular interpreter: a λJSON interpreter written in λJSON.",
+    "It demonstrates the homoiconicity of λJSON - code and data share the same representation.",
+    "The interpreter can evaluate a subset of λJSON including: numbers, booleans, null,",
+    "quoted values, if, cond, let, let*, lambda, define, and basic arithmetic/comparison.",
+    "This is a pedagogical implementation showing how interpreters work.",
+    "",
+    "Key concepts demonstrated:",
+    "- Environments as association lists (list of {name, value} objects)",
+    "- Closures capturing their lexical environment",
+    "- Special forms vs. function application",
+    "- Recursive evaluation of expressions"
+  ],
+
+  "setup": {
+    "description": "Helper functions that must be defined first",
+    
+    "lookup": [
+      "define", "lookup",
+      ["λ", ["sym", "env"],
+        ["cond",
+          [["eq?", ["length", "env"], 0], null],
+          [["eq?", "sym", ["get", ["car", "env"], ["quote", "name"]]],
+           ["get", ["car", "env"], ["quote", "value"]]],
+          ["else", ["lookup", "sym", ["cdr", "env"]]]]]
+    ],
+    
+    "extend-env": [
+      "define", "extend-env",
+      ["λ", ["name", "val", "env"],
+        ["cons",
+          ["assoc", ["assoc", {}, ["quote", "name"], "name"], ["quote", "value"], "val"],
+          "env"]]
+    ],
+    
+    "extend-env-list": [
+      "define", "extend-env-list",
+      ["λ", ["names", "vals", "env"],
+        ["cond",
+          [["eq?", ["length", "names"], 0], "env"],
+          ["else", 
+            ["extend-env-list",
+              ["cdr", "names"],
+              ["cdr", "vals"],
+              ["extend-env", ["car", "names"], ["car", "vals"], "env"]]]]]
+    ]
+  },
+
+  "interpreter_core": {
+    "description": "The core interpreter functions",
+    
+    "make-closure": [
+      "define", "make-closure",
+      ["λ", ["params", "body", "env"],
+        ["assoc",
+          ["assoc",
+            ["assoc",
+              ["assoc", {}, ["quote", "type"], ["quote", "closure"]],
+              ["quote", "params"], "params"],
+            ["quote", "body"], "body"],
+          ["quote", "env"], "env"]]
+    ],
+    
+    "closure?": [
+      "define", "closure?",
+      ["λ", ["x"],
+        ["and",
+          ["object?", "x"],
+          ["eq?", ["get", "x", ["quote", "type"]], ["quote", "closure"]]]]
+    ],
+    
+    "apply-closure": [
+      "define", "apply-closure",
+      ["λ", ["closure", "args"],
+        ["meta-eval",
+          ["get", "closure", ["quote", "body"]],
+          ["extend-env-list",
+            ["get", "closure", ["quote", "params"]],
+            "args",
+            ["get", "closure", ["quote", "env"]]]]]
+    ],
+
+    "eval-if": [
+      "define", "eval-if",
+      ["λ", ["cond-expr", "then-expr", "else-expr", "env"],
+        ["if", ["meta-eval", "cond-expr", "env"],
+          ["meta-eval", "then-expr", "env"],
+          ["meta-eval", "else-expr", "env"]]]
+    ],
+
+    "eval-cond": [
+      "define", "eval-cond",
+      ["λ", ["clauses", "env"],
+        ["cond",
+          [["eq?", ["length", "clauses"], 0], null],
+          [["eq?", ["car", ["car", "clauses"]], ["quote", "else"]],
+            ["meta-eval", ["nth", ["car", "clauses"], 1], "env"]],
+          [["meta-eval", ["car", ["car", "clauses"]], "env"],
+            ["meta-eval", ["nth", ["car", "clauses"], 1], "env"]],
+          ["else", ["eval-cond", ["cdr", "clauses"], "env"]]]]
+    ],
+
+    "eval-let": [
+      "define", "eval-let",
+      ["λ", ["bindings", "body", "outer-env"],
+        ["let*", [
+          ["names", ["map", ["λ", ["b"], ["car", "b"]], "bindings"]],
+          ["vals", ["map", ["λ", ["b"], ["meta-eval", ["nth", "b", 1], "outer-env"]], "bindings"]]
+        ],
+        ["meta-eval", "body", ["extend-env-list", "names", "vals", "outer-env"]]]]
+    ],
+
+    "eval-let-star": [
+      "define", "eval-let*",
+      ["λ", ["bindings", "body", "env"],
+        ["cond",
+          [["eq?", ["length", "bindings"], 0], ["meta-eval", "body", "env"]],
+          ["else",
+            ["let*", [
+              ["binding", ["car", "bindings"]],
+              ["name", ["car", "binding"]],
+              ["val", ["meta-eval", ["nth", "binding", 1], "env"]]
+            ],
+            ["eval-let*", ["cdr", "bindings"], "body", ["extend-env", "name", "val", "env"]]]]]]
+    ],
+
+    "apply-primitive": [
+      "define", "apply-primitive",
+      ["λ", ["op", "args"],
+        ["cond",
+          [["eq?", "op", ["quote", "+"]], 
+            ["reduce", ["λ", ["a", "b"], ["+", "a", "b"]], "args"]],
+          [["eq?", "op", ["quote", "-"]],
+            ["cond",
+              [["eq?", ["length", "args"], 1], ["-", 0, ["car", "args"]]],
+              ["else", ["reduce", ["λ", ["a", "b"], ["-", "a", "b"]], "args"]]]],
+          [["eq?", "op", ["quote", "*"]],
+            ["reduce", ["λ", ["a", "b"], ["*", "a", "b"]], "args"]],
+          [["eq?", "op", ["quote", "/"]],
+            ["reduce", ["λ", ["a", "b"], ["/", "a", "b"]], "args"]],
+          [["eq?", "op", ["quote", "%"]],
+            ["reduce", ["λ", ["a", "b"], ["%", "a", "b"]], "args"]],
+          [["eq?", "op", ["quote", ">"]],
+            [">", ["car", "args"], ["nth", "args", 1]]],
+          [["eq?", "op", ["quote", "<"]],
+            ["<", ["car", "args"], ["nth", "args", 1]]],
+          [["eq?", "op", ["quote", ">="]],
+            [">=", ["car", "args"], ["nth", "args", 1]]],
+          [["eq?", "op", ["quote", "<="]],
+            ["<=", ["car", "args"], ["nth", "args", 1]]],
+          [["eq?", "op", ["quote", "eq?"]],
+            ["eq?", ["car", "args"], ["nth", "args", 1]]],
+          [["eq?", "op", ["quote", "length"]],
+            ["length", ["car", "args"]]],
+          [["eq?", "op", ["quote", "car"]],
+            ["car", ["car", "args"]]],
+          [["eq?", "op", ["quote", "cdr"]],
+            ["cdr", ["car", "args"]]],
+          [["eq?", "op", ["quote", "cons"]],
+            ["cons", ["car", "args"], ["nth", "args", 1]]],
+          [["eq?", "op", ["quote", "nth"]],
+            ["nth", ["car", "args"], ["nth", "args", 1]]],
+          [["eq?", "op", ["quote", "list"]],
+            "args"],
+          [["eq?", "op", ["quote", "null?"]],
+            ["null?", ["car", "args"]]],
+          [["eq?", "op", ["quote", "number?"]],
+            ["number?", ["car", "args"]]],
+          [["eq?", "op", ["quote", "boolean?"]],
+            ["boolean?", ["car", "args"]]],
+          [["eq?", "op", ["quote", "string?"]],
+            ["string?", ["car", "args"]]],
+          [["eq?", "op", ["quote", "list?"]],
+            ["list?", ["car", "args"]]],
+          [["eq?", "op", ["quote", "object?"]],
+            ["object?", ["car", "args"]]],
+          ["else", null]]]
+    ],
+
+    "primitive?": [
+      "define", "primitive?",
+      ["λ", ["op"],
+        ["or",
+          ["eq?", "op", ["quote", "+"]],
+          ["eq?", "op", ["quote", "-"]],
+          ["eq?", "op", ["quote", "*"]],
+          ["eq?", "op", ["quote", "/"]],
+          ["eq?", "op", ["quote", "%"]],
+          ["eq?", "op", ["quote", ">"]],
+          ["eq?", "op", ["quote", "<"]],
+          ["eq?", "op", ["quote", ">="]],
+          ["eq?", "op", ["quote", "<="]],
+          ["eq?", "op", ["quote", "eq?"]],
+          ["eq?", "op", ["quote", "length"]],
+          ["eq?", "op", ["quote", "car"]],
+          ["eq?", "op", ["quote", "cdr"]],
+          ["eq?", "op", ["quote", "cons"]],
+          ["eq?", "op", ["quote", "nth"]],
+          ["eq?", "op", ["quote", "list"]],
+          ["eq?", "op", ["quote", "null?"]],
+          ["eq?", "op", ["quote", "number?"]],
+          ["eq?", "op", ["quote", "boolean?"]],
+          ["eq?", "op", ["quote", "string?"]],
+          ["eq?", "op", ["quote", "list?"]],
+          ["eq?", "op", ["quote", "object?"]]]]
+    ],
+
+    "meta-eval": [
+      "define", "meta-eval",
+      ["λ", ["exp", "env"],
+        ["cond",
+          ["comment", "=== Self-evaluating expressions ==="],
+          [["number?", "exp"], "exp"],
+          [["boolean?", "exp"], "exp"],
+          [["null?", "exp"], null],
+          [["and", ["object?", "exp"], ["not", ["list?", "exp"]]], "exp"],
+
+          ["comment", "=== Symbol lookup ==="],
+          [["string?", "exp"], ["lookup", "exp", "env"]],
+
+          ["comment", "=== Empty list ==="],
+          [["and", ["list?", "exp"], ["eq?", ["length", "exp"], 0]], []],
+
+          ["comment", "=== List expressions ==="],
+          [["list?", "exp"],
+            ["let*", [
+              ["op", ["car", "exp"]],
+              ["args", ["cdr", "exp"]]
+            ],
+            ["cond",
+              ["comment", "--- quote ---"],
+              [["eq?", "op", ["quote", "quote"]], ["car", "args"]],
+
+              ["comment", "--- if ---"],
+              [["eq?", "op", ["quote", "if"]],
+                ["eval-if",
+                  ["nth", "args", 0],
+                  ["nth", "args", 1],
+                  ["nth", "args", 2],
+                  "env"]],
+
+              ["comment", "--- cond ---"],
+              [["eq?", "op", ["quote", "cond"]], ["eval-cond", "args", "env"]],
+
+              ["comment", "--- let ---"],
+              [["eq?", "op", ["quote", "let"]],
+                ["eval-let", ["nth", "args", 0], ["nth", "args", 1], "env"]],
+
+              ["comment", "--- let* ---"],
+              [["eq?", "op", ["quote", "let*"]],
+                ["eval-let*", ["nth", "args", 0], ["nth", "args", 1], "env"]],
+
+              ["comment", "--- lambda / λ ---"],
+              [["or", ["eq?", "op", ["quote", "lambda"]], ["eq?", "op", ["quote", "λ"]]],
+                ["make-closure", ["nth", "args", 0], ["nth", "args", 1], "env"]],
+
+              ["comment", "--- and (short-circuit) ---"],
+              [["eq?", "op", ["quote", "and"]],
+                ["cond",
+                  [["eq?", ["length", "args"], 0], true],
+                  [["not", ["meta-eval", ["car", "args"], "env"]], false],
+                  ["else", 
+                    ["meta-eval", ["cons", ["quote", "and"], ["cdr", "args"]], "env"]]]],
+
+              ["comment", "--- or (short-circuit) ---"],
+              [["eq?", "op", ["quote", "or"]],
+                ["cond",
+                  [["eq?", ["length", "args"], 0], false],
+                  [["meta-eval", ["car", "args"], "env"], true],
+                  ["else",
+                    ["meta-eval", ["cons", ["quote", "or"], ["cdr", "args"]], "env"]]]],
+
+              ["comment", "--- not ---"],
+              [["eq?", "op", ["quote", "not"]],
+                ["not", ["meta-eval", ["car", "args"], "env"]]],
+
+              ["comment", "--- Primitive operations ---"],
+              [["primitive?", "op"],
+                ["apply-primitive", "op",
+                  ["map", ["λ", ["a"], ["meta-eval", "a", "env"]], "args"]]],
+
+              ["comment", "--- Function application ---"],
+              ["else",
+                ["let*", [
+                  ["fn", ["meta-eval", "op", "env"]],
+                  ["evaluated-args", ["map", ["λ", ["a"], ["meta-eval", "a", "env"]], "args"]]
+                ],
+                ["if", ["closure?", "fn"],
+                  ["apply-closure", "fn", "evaluated-args"],
+                  null]]]
+            ]]],
+
+          ["comment", "=== Unknown expression ==="],
+          ["else", null]
+        ]]
+    ]
+  },
+
+  "examples": [
+    {
+      "name": "Arithmetic",
+      "description": "Basic arithmetic operations",
+      "expression": ["meta-eval", ["quote", ["+", 1, 2, 3]], []],
+      "expected": 6
+    },
+    {
+      "name": "Nested arithmetic",
+      "description": "Nested arithmetic expressions",
+      "expression": ["meta-eval", ["quote", ["*", ["+", 2, 3], ["-", 10, 4]]], []],
+      "expected": 30
+    },
+    {
+      "name": "Comparison",
+      "description": "Comparison operators",
+      "expression": ["meta-eval", ["quote", ["<", 3, 5]], []],
+      "expected": true
+    },
+    {
+      "name": "If expression",
+      "description": "Conditional with if",
+      "expression": ["meta-eval", 
+        ["quote", ["if", [">", 10, 5], ["quote", "bigger"], ["quote", "smaller"]]], 
+        []],
+      "expected": "bigger"
+    },
+    {
+      "name": "Let binding",
+      "description": "Local variable binding with let",
+      "expression": ["meta-eval",
+        ["quote", ["let", [["x", 10], ["y", 20]], ["+", "x", "y"]]],
+        []],
+      "expected": 30
+    },
+    {
+      "name": "Let* sequential binding",
+      "description": "Sequential binding where y depends on x",
+      "expression": ["meta-eval",
+        ["quote", ["let*", [["x", 5], ["y", ["+", "x", 3]]], ["*", "x", "y"]]],
+        []],
+      "expected": 40
+    },
+    {
+      "name": "Lambda and application",
+      "description": "Create and call a lambda function",
+      "expression": ["meta-eval",
+        ["quote", [["λ", ["x", "y"], ["+", "x", "y"]], 3, 4]],
+        []],
+      "expected": 7
+    },
+    {
+      "name": "Higher-order function",
+      "description": "Function returning a function (closure)",
+      "expression": ["meta-eval",
+        ["quote",
+          ["let", [["make-adder", ["λ", ["n"], ["λ", ["x"], ["+", "x", "n"]]]]],
+            [["make-adder", 5], 10]]],
+        []],
+      "expected": 15
+    },
+    {
+      "name": "Cond expression",
+      "description": "Multi-branch conditional",
+      "expression": ["meta-eval",
+        ["quote",
+          ["cond",
+            [["<", 10, 5], ["quote", "small"]],
+            [["<", 10, 15], ["quote", "medium"]],
+            ["else", ["quote", "large"]]]],
+        []],
+      "expected": "medium"
+    },
+    {
+      "name": "Boolean logic",
+      "description": "and, or, not operators",
+      "expression": ["meta-eval",
+        ["quote", ["and", ["or", false, true], ["not", false]]],
+        []],
+      "expected": true
+    },
+    {
+      "name": "Quote",
+      "description": "Quote preserves structure",
+      "expression": ["meta-eval",
+        ["quote", ["quote", [1, 2, ["+", 3, 4]]]],
+        []],
+      "expected": [1, 2, ["+", 3, 4]]
+    },
+    {
+      "name": "Factorial",
+      "description": "Recursive factorial using self-application pattern",
+      "expression": ["meta-eval",
+        ["quote",
+          ["let", [[
+            "fact",
+            ["λ", ["self", "n"],
+              ["if", ["eq?", "n", 0],
+                1,
+                ["*", "n", ["self", "self", ["-", "n", 1]]]]]]],
+            ["fact", "fact", 5]]],
+        []],
+      "expected": 120
+    },
+    {
+      "name": "Fibonacci",
+      "description": "Fibonacci using self-application pattern",
+      "expression": ["meta-eval",
+        ["quote",
+          ["let", [[
+            "fib",
+            ["λ", ["self", "n"],
+              ["cond",
+                [["eq?", "n", 0], 0],
+                [["eq?", "n", 1], 1],
+                ["else", ["+",
+                  ["self", "self", ["-", "n", 1]],
+                  ["self", "self", ["-", "n", 2]]]]]]]],
+            ["fib", "fib", 10]]],
+        []],
+      "expected": 55
+    },
+    {
+      "name": "List operations",
+      "description": "Test car, cdr, cons",
+      "expression": ["meta-eval",
+        ["quote",
+          ["let", [["lst", ["quote", [1, 2, 3]]]],
+            ["cons", ["car", "lst"], ["cdr", "lst"]]]],
+        []],
+      "expected": [1, 2, 3]
+    }
+  ],
+
+  "full_program": {
+    "description": "Complete interpreter as a sequence of definitions",
+    "note": "Run these definitions in order, then use meta-eval to evaluate expressions",
+    "code": [
+      ["define", "lookup",
+        ["λ", ["sym", "env"],
+          ["cond",
+            [["eq?", ["length", "env"], 0], null],
+            [["eq?", "sym", ["get", ["car", "env"], ["quote", "name"]]],
+             ["get", ["car", "env"], ["quote", "value"]]],
+            ["else", ["lookup", "sym", ["cdr", "env"]]]]]],
+
+      ["define", "extend-env",
+        ["λ", ["name", "val", "env"],
+          ["cons",
+            ["assoc", ["assoc", {}, ["quote", "name"], "name"], ["quote", "value"], "val"],
+            "env"]]],
+
+      ["define", "extend-env-list",
+        ["λ", ["names", "vals", "env"],
+          ["cond",
+            [["eq?", ["length", "names"], 0], "env"],
+            ["else", 
+              ["extend-env-list",
+                ["cdr", "names"],
+                ["cdr", "vals"],
+                ["extend-env", ["car", "names"], ["car", "vals"], "env"]]]]]],
+
+      ["define", "make-closure",
+        ["λ", ["params", "body", "env"],
+          ["assoc",
+            ["assoc",
+              ["assoc",
+                ["assoc", {}, ["quote", "type"], ["quote", "closure"]],
+                ["quote", "params"], "params"],
+              ["quote", "body"], "body"],
+            ["quote", "env"], "env"]]],
+
+      ["define", "closure?",
+        ["λ", ["x"],
+          ["and", ["object?", "x"],
+                  ["eq?", ["get", "x", ["quote", "type"]], ["quote", "closure"]]]]],
+
+      ["define", "apply-closure",
+        ["λ", ["closure", "args"],
+          ["meta-eval",
+            ["get", "closure", ["quote", "body"]],
+            ["extend-env-list",
+              ["get", "closure", ["quote", "params"]],
+              "args",
+              ["get", "closure", ["quote", "env"]]]]]],
+
+      ["define", "eval-if",
+        ["λ", ["cond-expr", "then-expr", "else-expr", "env"],
+          ["if", ["meta-eval", "cond-expr", "env"],
+            ["meta-eval", "then-expr", "env"],
+            ["meta-eval", "else-expr", "env"]]]],
+
+      ["define", "eval-cond",
+        ["λ", ["clauses", "env"],
+          ["cond",
+            [["eq?", ["length", "clauses"], 0], null],
+            [["eq?", ["car", ["car", "clauses"]], ["quote", "else"]],
+              ["meta-eval", ["nth", ["car", "clauses"], 1], "env"]],
+            [["meta-eval", ["car", ["car", "clauses"]], "env"],
+              ["meta-eval", ["nth", ["car", "clauses"], 1], "env"]],
+            ["else", ["eval-cond", ["cdr", "clauses"], "env"]]]]],
+
+      ["define", "eval-let",
+        ["λ", ["bindings", "body", "outer-env"],
+          ["let*", [
+            ["names", ["map", ["λ", ["b"], ["car", "b"]], "bindings"]],
+            ["vals", ["map", ["λ", ["b"], ["meta-eval", ["nth", "b", 1], "outer-env"]], "bindings"]]
+          ],
+          ["meta-eval", "body", ["extend-env-list", "names", "vals", "outer-env"]]]]],
+
+      ["define", "eval-let*",
+        ["λ", ["bindings", "body", "env"],
+          ["cond",
+            [["eq?", ["length", "bindings"], 0], ["meta-eval", "body", "env"]],
+            ["else",
+              ["let*", [
+                ["binding", ["car", "bindings"]],
+                ["name", ["car", "binding"]],
+                ["val", ["meta-eval", ["nth", "binding", 1], "env"]]
+              ],
+              ["eval-let*", ["cdr", "bindings"], "body", ["extend-env", "name", "val", "env"]]]]]]],
+
+      ["define", "apply-primitive",
+        ["λ", ["op", "args"],
+          ["cond",
+            [["eq?", "op", ["quote", "+"]], 
+              ["reduce", ["λ", ["a", "b"], ["+", "a", "b"]], "args"]],
+            [["eq?", "op", ["quote", "-"]],
+              ["cond",
+                [["eq?", ["length", "args"], 1], ["-", 0, ["car", "args"]]],
+                ["else", ["reduce", ["λ", ["a", "b"], ["-", "a", "b"]], "args"]]]],
+            [["eq?", "op", ["quote", "*"]],
+              ["reduce", ["λ", ["a", "b"], ["*", "a", "b"]], "args"]],
+            [["eq?", "op", ["quote", "/"]],
+              ["reduce", ["λ", ["a", "b"], ["/", "a", "b"]], "args"]],
+            [["eq?", "op", ["quote", "%"]],
+              ["reduce", ["λ", ["a", "b"], ["%", "a", "b"]], "args"]],
+            [["eq?", "op", ["quote", ">"]],
+              [">", ["car", "args"], ["nth", "args", 1]]],
+            [["eq?", "op", ["quote", "<"]],
+              ["<", ["car", "args"], ["nth", "args", 1]]],
+            [["eq?", "op", ["quote", ">="]],
+              [">=", ["car", "args"], ["nth", "args", 1]]],
+            [["eq?", "op", ["quote", "<="]],
+              ["<=", ["car", "args"], ["nth", "args", 1]]],
+            [["eq?", "op", ["quote", "eq?"]],
+              ["eq?", ["car", "args"], ["nth", "args", 1]]],
+            [["eq?", "op", ["quote", "length"]],
+              ["length", ["car", "args"]]],
+            [["eq?", "op", ["quote", "car"]],
+              ["car", ["car", "args"]]],
+            [["eq?", "op", ["quote", "cdr"]],
+              ["cdr", ["car", "args"]]],
+            [["eq?", "op", ["quote", "cons"]],
+              ["cons", ["car", "args"], ["nth", "args", 1]]],
+            [["eq?", "op", ["quote", "nth"]],
+              ["nth", ["car", "args"], ["nth", "args", 1]]],
+            [["eq?", "op", ["quote", "list"]],
+              "args"],
+            [["eq?", "op", ["quote", "null?"]],
+              ["null?", ["car", "args"]]],
+            [["eq?", "op", ["quote", "number?"]],
+              ["number?", ["car", "args"]]],
+            [["eq?", "op", ["quote", "boolean?"]],
+              ["boolean?", ["car", "args"]]],
+            [["eq?", "op", ["quote", "string?"]],
+              ["string?", ["car", "args"]]],
+            [["eq?", "op", ["quote", "list?"]],
+              ["list?", ["car", "args"]]],
+            [["eq?", "op", ["quote", "object?"]],
+              ["object?", ["car", "args"]]],
+            ["else", null]]]],
+
+      ["define", "primitive?",
+        ["λ", ["op"],
+          ["or",
+            ["eq?", "op", ["quote", "+"]],
+            ["eq?", "op", ["quote", "-"]],
+            ["eq?", "op", ["quote", "*"]],
+            ["eq?", "op", ["quote", "/"]],
+            ["eq?", "op", ["quote", "%"]],
+            ["eq?", "op", ["quote", ">"]],
+            ["eq?", "op", ["quote", "<"]],
+            ["eq?", "op", ["quote", ">="]],
+            ["eq?", "op", ["quote", "<="]],
+            ["eq?", "op", ["quote", "eq?"]],
+            ["eq?", "op", ["quote", "length"]],
+            ["eq?", "op", ["quote", "car"]],
+            ["eq?", "op", ["quote", "cdr"]],
+            ["eq?", "op", ["quote", "cons"]],
+            ["eq?", "op", ["quote", "nth"]],
+            ["eq?", "op", ["quote", "list"]],
+            ["eq?", "op", ["quote", "null?"]],
+            ["eq?", "op", ["quote", "number?"]],
+            ["eq?", "op", ["quote", "boolean?"]],
+            ["eq?", "op", ["quote", "string?"]],
+            ["eq?", "op", ["quote", "list?"]],
+            ["eq?", "op", ["quote", "object?"]]]]],
+
+      ["define", "meta-eval",
+        ["λ", ["exp", "env"],
+          ["cond",
+            [["number?", "exp"], "exp"],
+            [["boolean?", "exp"], "exp"],
+            [["null?", "exp"], null],
+            [["and", ["object?", "exp"], ["not", ["list?", "exp"]]], "exp"],
+            [["string?", "exp"], ["lookup", "exp", "env"]],
+            [["and", ["list?", "exp"], ["eq?", ["length", "exp"], 0]], []],
+            [["list?", "exp"],
+              ["let*", [
+                ["op", ["car", "exp"]],
+                ["args", ["cdr", "exp"]]
+              ],
+              ["cond",
+                [["eq?", "op", ["quote", "quote"]], ["car", "args"]],
+                [["eq?", "op", ["quote", "if"]],
+                  ["eval-if", ["nth", "args", 0], ["nth", "args", 1], ["nth", "args", 2], "env"]],
+                [["eq?", "op", ["quote", "cond"]], ["eval-cond", "args", "env"]],
+                [["eq?", "op", ["quote", "let"]],
+                  ["eval-let", ["nth", "args", 0], ["nth", "args", 1], "env"]],
+                [["eq?", "op", ["quote", "let*"]],
+                  ["eval-let*", ["nth", "args", 0], ["nth", "args", 1], "env"]],
+                [["or", ["eq?", "op", ["quote", "lambda"]], ["eq?", "op", ["quote", "λ"]]],
+                  ["make-closure", ["nth", "args", 0], ["nth", "args", 1], "env"]],
+                [["eq?", "op", ["quote", "and"]],
+                  ["cond",
+                    [["eq?", ["length", "args"], 0], true],
+                    [["not", ["meta-eval", ["car", "args"], "env"]], false],
+                    ["else", ["meta-eval", ["cons", ["quote", "and"], ["cdr", "args"]], "env"]]]],
+                [["eq?", "op", ["quote", "or"]],
+                  ["cond",
+                    [["eq?", ["length", "args"], 0], false],
+                    [["meta-eval", ["car", "args"], "env"], true],
+                    ["else", ["meta-eval", ["cons", ["quote", "or"], ["cdr", "args"]], "env"]]]],
+                [["eq?", "op", ["quote", "not"]],
+                  ["not", ["meta-eval", ["car", "args"], "env"]]],
+                [["primitive?", "op"],
+                  ["apply-primitive", "op",
+                    ["map", ["λ", ["a"], ["meta-eval", "a", "env"]], "args"]]],
+                ["else",
+                  ["let*", [
+                    ["fn", ["meta-eval", "op", "env"]],
+                    ["evaluated-args", ["map", ["λ", ["a"], ["meta-eval", "a", "env"]], "args"]]
+                  ],
+                  ["if", ["closure?", "fn"],
+                    ["apply-closure", "fn", "evaluated-args"],
+                    null]]]
+              ]]],
+            ["else", null]
+          ]]]
+    ]
+  },
+
+  "demo": {
+    "description": "After loading full_program, run this to compute factorial(6)",
+    "expression": ["meta-eval",
+      ["quote",
+        ["let", [[
+          "fact",
+          ["λ", ["self", "n"],
+            ["if", ["eq?", "n", 0],
+              1,
+              ["*", "n", ["self", "self", ["-", "n", 1]]]]]]],
+          ["fact", "fact", 6]]],
+      []],
+    "expected": 720
+  }
+}

@@ -1,0 +1,153 @@
+{
+  "name": "Standard Library - Arithmetic",
+  "description": "Tests for arithmetic operators",
+  "version": "1.0.0",
+  "tests": [
+    {
+      "name": "addition-two-numbers",
+      "expression": ["+", 2, 3],
+      "expected": 5
+    },
+    {
+      "name": "addition-multiple",
+      "expression": ["+", 1, 2, 3, 4],
+      "expected": 10
+    },
+    {
+      "name": "addition-single",
+      "expression": ["+", 5],
+      "expected": 5
+    },
+    {
+      "name": "addition-zero-args",
+      "expression": ["+"],
+      "expected": 0
+    },
+    {
+      "name": "addition-negative",
+      "expression": ["+", -5, 3],
+      "expected": -2
+    },
+    {
+      "name": "subtraction-two-numbers",
+      "expression": ["-", 10, 3],
+      "expected": 7
+    },
+    {
+      "name": "subtraction-multiple",
+      "expression": ["-", 20, 5, 3, 2],
+      "expected": 10
+    },
+    {
+      "name": "subtraction-unary-negation",
+      "expression": ["-", 5],
+      "expected": -5
+    },
+    {
+      "name": "multiplication-two-numbers",
+      "expression": ["*", 4, 5],
+      "expected": 20
+    },
+    {
+      "name": "multiplication-multiple",
+      "expression": ["*", 2, 3, 4],
+      "expected": 24
+    },
+    {
+      "name": "multiplication-zero-args",
+      "expression": ["*"],
+      "expected": 1
+    },
+    {
+      "name": "division-two-numbers",
+      "expression": ["/", 20, 4],
+      "expected": 5
+    },
+    {
+      "name": "division-multiple",
+      "expression": ["/", 100, 2, 5],
+      "expected": 10
+    },
+    {
+      "name": "division-float-result",
+      "expression": ["/", 5, 2],
+      "expected": 2.5
+    },
+    {
+      "name": "modulo-basic",
+      "expression": ["%", 10, 3],
+      "expected": 1
+    },
+    {
+      "name": "modulo-no-remainder",
+      "expression": ["%", 12, 4],
+      "expected": 0
+    },
+    {
+      "name": "abs-positive",
+      "expression": ["abs", 5],
+      "expected": 5
+    },
+    {
+      "name": "abs-negative",
+      "expression": ["abs", -5],
+      "expected": 5
+    },
+    {
+      "name": "abs-zero",
+      "expression": ["abs", 0],
+      "expected": 0
+    },
+    {
+      "name": "min-two-numbers",
+      "expression": ["min", 5, 3],
+      "expected": 3
+    },
+    {
+      "name": "min-multiple",
+      "expression": ["min", 7, 2, 9, 1, 5],
+      "expected": 1
+    },
+    {
+      "name": "max-two-numbers",
+      "expression": ["max", 5, 3],
+      "expected": 5
+    },
+    {
+      "name": "max-multiple",
+      "expression": ["max", 7, 2, 9, 1, 5],
+      "expected": 9
+    },
+    {
+      "name": "floor-positive",
+      "expression": ["floor", 3.7],
+      "expected": 3
+    },
+    {
+      "name": "floor-negative",
+      "expression": ["floor", -3.2],
+      "expected": -4
+    },
+    {
+      "name": "ceil-positive",
+      "expression": ["ceil", 3.2],
+      "expected": 4
+    },
+    {
+      "name": "ceil-negative",
+      "expression": ["ceil", -3.7],
+      "expected": -3
+    },
+    {
+      "name": "round-down",
+      "expression": ["round", 3.4],
+      "expected": 3
+    },
+    {
+      "name": "round-up",
+      "expression": ["round", 3.6],
+      "expected": 4
+    }
+  ]
+}
+

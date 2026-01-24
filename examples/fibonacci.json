@@ -1,0 +1,359 @@
+{
+  "description": "Fibonacci number computation in λ.json - Multiple implementations",
+  "examples": [
+    {
+      "name": "Recursive Fibonacci",
+      "description": "Classic recursive implementation - simple but inefficient for large n",
+      "code": [
+        "define",
+        "fib-recursive",
+        [
+          "λ",
+          ["n"],
+          [
+            "cond",
+            [["eq?", "n", 0], 0],
+            [["eq?", "n", 1], 1],
+            [
+              "else",
+              [
+                "+",
+                ["fib-recursive", ["-", "n", 1]],
+                ["fib-recursive", ["-", "n", 2]]
+              ]
+            ]
+          ]
+        ]
+      ],
+      "test": ["fib-recursive", 10],
+      "expected": 55
+    },
+    {
+      "name": "Iterative Fibonacci",
+      "description": "Tail-recursive iterative implementation - efficient for large n",
+      "code": [
+        "define",
+        "fib-iter",
+        [
+          "λ",
+          ["n"],
+          [
+            "let",
+            [
+              [
+                "iter",
+                [
+                  "λ",
+                  ["count", "a", "b"],
+                  [
+                    "if",
+                    ["eq?", "count", 0],
+                    "a",
+                    ["iter", ["-", "count", 1], "b", ["+", "a", "b"]]
+                  ]
+                ]
+              ]
+            ],
+            ["iter", "n", 0, 1]
+          ]
+        ]
+      ],
+      "test": ["fib-iter", 10],
+      "expected": 55
+    },
+    {
+      "name": "Fibonacci Sequence Generator",
+      "description": "Generate first n Fibonacci numbers as a list",
+      "code": [
+        "define",
+        "fib-sequence",
+        [
+          "λ",
+          ["n"],
+          [
+            "let",
+            [
+              [
+                "build-seq",
+                [
+                  "λ",
+                  ["count", "a", "b", "acc"],
+                  [
+                    "if",
+                    ["eq?", "count", 0],
+                    "acc",
+                    [
+                      "build-seq",
+                      ["-", "count", 1],
+                      "b",
+                      ["+", "a", "b"],
+                      ["+", "acc", ["quote", []], ["quote", "a"]]
+                    ]
+                  ]
+                ]
+              ]
+            ],
+            ["build-seq", "n", 0, 1, []]
+          ]
+        ]
+      ],
+      "test": ["fib-sequence", 10],
+      "expected": [0, 1, 1, 2, 3, 5, 8, 13, 21, 34]
+    },
+    {
+      "name": "Fibonacci with Map",
+      "description": "Compute Fibonacci for multiple inputs using map",
+      "code": [
+        "define",
+        "fib-map",
+        [
+          "λ",
+          ["nums"],
+          [
+            "map",
+            [
+              "λ",
+              ["n"],
+              [
+                "cond",
+                [["eq?", "n", 0], 0],
+                [["eq?", "n", 1], 1],
+                [
+                  "else",
+                  [
+                    "let",
+                    [
+                      [
+                        "iter",
+                        [
+                          "λ",
+                          ["count", "a", "b"],
+                          [
+                            "if",
+                            ["eq?", "count", 0],
+                            "a",
+                            ["iter", ["-", "count", 1], "b", ["+", "a", "b"]]
+                          ]
+                        ]
+                      ]
+                    ],
+                    ["iter", "n", 0, 1]
+                  ]
+                ]
+              ]
+            ],
+            "nums"
+          ]
+        ]
+      ],
+      "test": ["fib-map", [5, 7, 10, 12]],
+      "expected": [5, 13, 55, 144]
+    },
+    {
+      "name": "Fibonacci Stream",
+      "description": "Infinite Fibonacci stream using lazy evaluation",
+      "code": [
+        "define",
+        "fib-stream",
+        [
+          "λ",
+          ["a", "b"],
+          ["cons-stream", "a", ["fib-stream", "b", ["+", "a", "b"]]]
+        ]
+      ],
+      "setup": ["define", "fibs", ["fib-stream", 0, 1]],
+      "test": ["take", 15, "fibs"],
+      "expected": [0, 1, 1, 2, 3, 5, 8, 13, 21, 34, 55, 89, 144, 233, 377]
+    },
+    {
+      "name": "Fibonacci with Filter",
+      "description": "Find even Fibonacci numbers less than 100",
+      "code": [
+        "define",
+        "even-fibs-under-100",
+        [
+          "λ",
+          [],
+          [
+            "let",
+            [
+              [
+                "fib-list",
+                [
+                  "take",
+                  15,
+                  ["fib-stream", 0, 1]
+                ]
+              ]
+            ],
+            [
+              "filter",
+              [
+                "λ",
+                ["n"],
+                [
+                  "and",
+                  ["<", "n", 100],
+                  ["eq?", ["%", "n", 2], 0]
+                ]
+              ],
+              "fib-list"
+            ]
+          ]
+        ]
+      ],
+      "note": "This example requires modulo operator (%) which could be added to the interpreter"
+    },
+    {
+      "name": "Sum of Fibonacci Numbers",
+      "description": "Calculate sum of first n Fibonacci numbers",
+      "code": [
+        "define",
+        "sum-fib",
+        [
+          "λ",
+          ["n"],
+          [
+            "let",
+            [
+              [
+                "fib",
+                [
+                  "λ",
+                  ["i"],
+                  [
+                    "cond",
+                    [["eq?", "i", 0], 0],
+                    [["eq?", "i", 1], 1],
+                    [
+                      "else",
+                      [
+                        "let",
+                        [
+                          [
+                            "iter",
+                            [
+                              "λ",
+                              ["count", "a", "b"],
+                              [
+                                "if",
+                                ["eq?", "count", 0],
+                                "a",
+                                ["iter", ["-", "count", 1], "b", ["+", "a", "b"]]
+                              ]
+                            ]
+                          ]
+                        ],
+                        ["iter", "i", 0, 1]
+                      ]
+                    ]
+                  ]
+                ]
+              ],
+              [
+                "range",
+                [
+                  "λ",
+                  ["max"],
+                  [
+                    "let",
+                    [
+                      [
+                        "build",
+                        [
+                          "λ",
+                          ["i", "acc"],
+                          [
+                            "if",
+                            [">", "i", "max"],
+                            "acc",
+                            ["build", ["+", "i", 1], ["+", "acc", ["quote", []], ["quote", "i"]]]
+                          ]
+                        ]
+                      ]
+                    ],
+                    ["build", 0, []]
+                  ]
+                ]
+              ]
+            ],
+            [
+              "reduce",
+              ["λ", ["acc", "i"], ["+", "acc", ["fib", "i"]]],
+              ["range", "n"]
+            ]
+          ]
+        ]
+      ],
+      "test": ["sum-fib", 10],
+      "expected": 143,
+      "note": "Sum of fib(0) through fib(10): 0+1+1+2+3+5+8+13+21+34+55 = 143"
+    }
+  ],
+  "usage_examples": [
+    {
+      "description": "Simple recursive call",
+      "expression": [
+        [
+          "define",
+          "fib",
+          [
+            "λ",
+            ["n"],
+            [
+              "cond",
+              [["eq?", "n", 0], 0],
+              [["eq?", "n", 1], 1],
+              ["else", ["+", ["fib", ["-", "n", 1]], ["fib", ["-", "n", 2]]]]
+            ]
+          ]
+        ],
+        ["fib", 7]
+      ],
+      "result": 13
+    },
+    {
+      "description": "Inline lambda for single use",
+      "expression": [
+        [
+          "λ",
+          ["n"],
+          [
+            "cond",
+            [["eq?", "n", 0], 0],
+            [["eq?", "n", 1], 1],
+            [
+              "else",
+              [
+                "let",
+                [
+                  [
+                    "iter",
+                    [
+                      "λ",
+                      ["count", "a", "b"],
+                      [
+                        "if",
+                        ["eq?", "count", 0],
+                        "a",
+                        ["iter", ["-", "count", 1], "b", ["+", "a", "b"]]
+                      ]
+                    ]
+                  ]
+                ],
+                ["iter", "n", 0, 1]
+              ]
+            ]
+          ]
+        ],
+        8
+      ],
+      "result": 21
+    }
+  ],
+  "performance_notes": {
+    "recursive": "O(2^n) time complexity - exponential, only suitable for small n (< 20)",
+    "iterative": "O(n) time complexity - linear, efficient for large n",
+    "stream": "Lazy evaluation allows infinite sequences, only computes what's needed"
+  }
+}

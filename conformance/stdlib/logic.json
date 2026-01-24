@@ -1,0 +1,85 @@
+{
+  "name": "Standard Library - Logic",
+  "description": "Tests for logical operators",
+  "version": "1.0.0",
+  "tests": [
+    {
+      "name": "and-all-true",
+      "expression": ["and", true, true, true],
+      "expected": true
+    },
+    {
+      "name": "and-one-false",
+      "expression": ["and", true, false, true],
+      "expected": false
+    },
+    {
+      "name": "and-empty",
+      "expression": ["and"],
+      "expected": true
+    },
+    {
+      "name": "and-single-true",
+      "expression": ["and", true],
+      "expected": true
+    },
+    {
+      "name": "and-single-false",
+      "expression": ["and", false],
+      "expected": false
+    },
+    {
+      "name": "or-all-false",
+      "expression": ["or", false, false, false],
+      "expected": false
+    },
+    {
+      "name": "or-one-true",
+      "expression": ["or", false, true, false],
+      "expected": true
+    },
+    {
+      "name": "or-empty",
+      "expression": ["or"],
+      "expected": false
+    },
+    {
+      "name": "or-single-true",
+      "expression": ["or", true],
+      "expected": true
+    },
+    {
+      "name": "or-single-false",
+      "expression": ["or", false],
+      "expected": false
+    },
+    {
+      "name": "not-true",
+      "expression": ["not", true],
+      "expected": false
+    },
+    {
+      "name": "not-false",
+      "expression": ["not", false],
+      "expected": true
+    },
+    {
+      "name": "and-short-circuit",
+      "description": "and should short-circuit on first false",
+      "expression": ["and", false, ["error-if-evaluated"]],
+      "expected": false
+    },
+    {
+      "name": "or-short-circuit",
+      "description": "or should short-circuit on first true",
+      "expression": ["or", true, ["error-if-evaluated"]],
+      "expected": true
+    },
+    {
+      "name": "combined-logic",
+      "expression": ["and", ["or", true, false], ["not", false]],
+      "expected": true
+    }
+  ]
+}
+

@@ -1,0 +1,108 @@
+{
+  "name": "Standard Library - Collections",
+  "description": "Tests for collection operations",
+  "version": "1.0.0",
+  "tests": [
+    {
+      "name": "length-empty",
+      "expression": ["length", ["quote", []]],
+      "expected": 0
+    },
+    {
+      "name": "length-non-empty",
+      "expression": ["length", ["quote", [1, 2, 3, 4, 5]]],
+      "expected": 5
+    },
+    {
+      "name": "map-double",
+      "expression": ["map", ["λ", ["x"], ["*", "x", 2]], ["quote", [1, 2, 3]]],
+      "expected": [2, 4, 6]
+    },
+    {
+      "name": "map-empty",
+      "expression": ["map", ["λ", ["x"], "x"], ["quote", []]],
+      "expected": []
+    },
+    {
+      "name": "map-identity",
+      "expression": ["map", ["λ", ["x"], "x"], ["quote", [1, 2, 3]]],
+      "expected": [1, 2, 3]
+    },
+    {
+      "name": "filter-even",
+      "expression": ["filter", ["λ", ["x"], ["eq?", ["%", "x", 2], 0]], ["quote", [1, 2, 3, 4, 5, 6]]],
+      "expected": [2, 4, 6]
+    },
+    {
+      "name": "filter-empty-result",
+      "expression": ["filter", ["λ", ["x"], false], ["quote", [1, 2, 3]]],
+      "expected": []
+    },
+    {
+      "name": "filter-all-match",
+      "expression": ["filter", ["λ", ["x"], true], ["quote", [1, 2, 3]]],
+      "expected": [1, 2, 3]
+    },
+    {
+      "name": "reduce-sum",
+      "expression": ["reduce", ["λ", ["acc", "x"], ["+", "acc", "x"]], ["quote", [1, 2, 3, 4]]],
+      "expected": 10
+    },
+    {
+      "name": "reduce-product",
+      "expression": ["reduce", ["λ", ["acc", "x"], ["*", "acc", "x"]], ["quote", [1, 2, 3, 4]]],
+      "expected": 24
+    },
+    {
+      "name": "type-predicate-null",
+      "expression": ["null?", null],
+      "expected": true
+    },
+    {
+      "name": "type-predicate-not-null",
+      "expression": ["null?", 0],
+      "expected": false
+    },
+    {
+      "name": "type-predicate-list-true",
+      "expression": ["list?", ["quote", [1, 2, 3]]],
+      "expected": true
+    },
+    {
+      "name": "type-predicate-list-false",
+      "expression": ["list?", 42],
+      "expected": false
+    },
+    {
+      "name": "type-predicate-number-true",
+      "expression": ["number?", 42],
+      "expected": true
+    },
+    {
+      "name": "type-predicate-number-false",
+      "expression": ["number?", ["quote", "42"]],
+      "expected": false
+    },
+    {
+      "name": "type-predicate-string-true",
+      "expression": ["string?", ["quote", "hello"]],
+      "expected": true
+    },
+    {
+      "name": "type-predicate-boolean-true",
+      "expression": ["boolean?", true],
+      "expected": true
+    },
+    {
+      "name": "type-predicate-object-true",
+      "expression": ["object?", {"a": 1}],
+      "expected": true
+    },
+    {
+      "name": "type-predicate-object-false-array",
+      "expression": ["object?", ["quote", [1, 2]]],
+      "expected": false
+    }
+  ]
+}
+

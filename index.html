@@ -1,0 +1,325 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>λ.json Converter & Runner</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            overflow: hidden;
+        }
+
+        header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+
+        header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+        }
+
+        header p {
+            font-size: 1.1em;
+            opacity: 0.9;
+        }
+
+        .main-content {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            padding: 30px;
+        }
+
+        .panel {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        .panel h2 {
+            color: #667eea;
+            font-size: 1.5em;
+            margin-bottom: 10px;
+        }
+
+        textarea {
+            width: 100%;
+            min-height: 300px;
+            padding: 15px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-family: 'Courier New', monospace;
+            font-size: 14px;
+            resize: vertical;
+            transition: border-color 0.3s;
+        }
+
+        textarea:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        .output-area {
+            width: 100%;
+            min-height: 300px;
+            padding: 15px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-family: 'Courier New', monospace;
+            font-size: 14px;
+            background: #f8f9fa;
+            overflow: auto;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+        }
+
+        .button-group {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        button {
+            flex: 1;
+            min-width: 120px;
+            padding: 12px 24px;
+            border: none;
+            border-radius: 6px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        }
+
+        .btn-secondary {
+            background: #6c757d;
+            color: white;
+        }
+
+        .btn-secondary:hover {
+            background: #5a6268;
+            transform: translateY(-2px);
+        }
+
+        .btn-success {
+            background: #28a745;
+            color: white;
+        }
+
+        .btn-success:hover {
+            background: #218838;
+            transform: translateY(-2px);
+        }
+
+        .examples {
+            padding: 30px;
+            background: #f8f9fa;
+            border-top: 2px solid #e0e0e0;
+        }
+
+        .examples h3 {
+            color: #667eea;
+            margin-bottom: 15px;
+        }
+
+        .example-buttons {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        .example-btn {
+            padding: 8px 16px;
+            background: white;
+            border: 2px solid #667eea;
+            color: #667eea;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: all 0.3s;
+        }
+
+        .example-btn:hover {
+            background: #667eea;
+            color: white;
+        }
+
+        .error {
+            color: #dc3545;
+            font-weight: bold;
+        }
+
+        .success {
+            color: #28a745;
+            font-weight: bold;
+        }
+
+        @media (max-width: 968px) {
+            .main-content {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>λ.json Converter & Runner</h1>
+            <p>A Turing-complete, homoiconic strict subset of JSON</p>
+        </header>
+
+        <div class="main-content">
+            <div class="panel">
+                <h2>Input λ.json</h2>
+                <textarea id="input" placeholder='Enter λ.json expression, e.g., ["+", 2, 3, 5]'>["+", 2, 3, 5]</textarea>
+                <div class="button-group">
+                    <button class="btn-primary" onclick="runCode()">▶ Run Code</button>
+                    <button class="btn-success" onclick="convertToJSON()">🔄 Convert to JSON</button>
+                    <button class="btn-secondary" onclick="clearAll()">🗑️ Clear</button>
+                </div>
+            </div>
+
+            <div class="panel">
+                <h2>Output</h2>
+                <div id="output" class="output-area">Results will appear here...</div>
+            </div>
+        </div>
+
+        <div class="examples">
+            <h3>Quick Examples</h3>
+            <div class="example-buttons">
+                <button class="example-btn" onclick="loadExample('arithmetic')">Arithmetic</button>
+                <button class="example-btn" onclick="loadExample('lambda')">Lambda Function</button>
+                <button class="example-btn" onclick="loadExample('fibonacci')">Fibonacci</button>
+                <button class="example-btn" onclick="loadExample('conditional')">Conditional</button>
+                <button class="example-btn" onclick="loadExample('average')">Average</button>
+                <button class="example-btn" onclick="loadExample('map')">Map Function</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="lambda-json-browser.js"></script>
+    <script>
+        const examples = {
+            arithmetic: '["+", 2, 3, 5]',
+            lambda: '[["λ", ["x"], ["*", "x", "x"]], 5]',
+            fibonacci: `[
+  ["define", "fib", 
+    ["λ", ["n"],
+      ["cond",
+        [["eq?", "n", 0], 0],
+        [["eq?", "n", 1], 1],
+        ["else", ["+", ["fib", ["-", "n", 1]], ["fib", ["-", "n", 2]]]]
+      ]
+    ]
+  ],
+  ["fib", 10]
+]`,
+            conditional: '["if", [">", 5, 2], "greater", "less"]',
+            average: `{
+  "data": [1, 2, 3, 4],
+  "code": [
+    "λ",
+    ["nums"],
+    [
+      "/",
+      ["reduce", ["λ", ["acc", "curr"], ["+", "acc", "curr"]], "nums"],
+      ["length", "nums"]
+    ]
+  ]
+}`,
+            map: '["map", ["λ", ["x"], ["*", "x", 2]], [1, 2, 3, 4, 5]]'
+        };
+
+        function loadExample(name) {
+            document.getElementById('input').value = examples[name];
+        }
+
+        function runCode() {
+            const input = document.getElementById('input').value.trim();
+            const output = document.getElementById('output');
+            
+            if (!input) {
+                output.innerHTML = '<span class="error">Error: Please enter some λ.json code</span>';
+                return;
+            }
+
+            try {
+                // Parse the input as JSON
+                const parsed = JSON.parse(input);
+                
+                // Check if it's an object with data and code properties
+                if (typeof parsed === 'object' && parsed !== null && !Array.isArray(parsed) && 'data' in parsed && 'code' in parsed) {
+                    // Evaluate code with data
+                    const result = evaluate([parsed.code, parsed.data], {});
+                    const resultObj = { ...parsed, result };
+                    output.innerHTML = '<span class="success">✓ Execution successful!</span>\n\n' + 
+                                     JSON.stringify(resultObj, null, 2);
+                } else {
+                    // Regular evaluation
+                    const result = evaluate(parsed, {});
+                    output.innerHTML = '<span class="success">✓ Execution successful!</span>\n\nResult: ' + 
+                                     JSON.stringify(result, null, 2);
+                }
+            } catch (error) {
+                output.innerHTML = '<span class="error">Error: ' + error.message + '</span>';
+            }
+        }
+
+        function convertToJSON() {
+            const input = document.getElementById('input').value.trim();
+            const output = document.getElementById('output');
+            
+            if (!input) {
+                output.innerHTML = '<span class="error">Error: Please enter some λ.json code</span>';
+                return;
+            }
+
+            try {
+                // Parse and pretty-print as JSON
+                const parsed = JSON.parse(input);
+                output.innerHTML = '<span class="success">✓ Valid JSON!</span>\n\n' + 
+                                 JSON.stringify(parsed, null, 2);
+            } catch (error) {
+                output.innerHTML = '<span class="error">Error: Invalid JSON - ' + error.message + '</span>';
+            }
+        }
+
+        function clearAll() {
+            document.getElementById('input').value = '';
+            document.getElementById('output').innerHTML = 'Results will appear here...';
+        }
+    </script>
+</body>
+</html>
