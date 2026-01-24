@@ -286,6 +286,11 @@ class Compiler {
         return;
       }
 
+      if (op === 'letrec') {
+        this.compileLetrec(args, tailPosition);
+        return;
+      }
+
       // Inlined arithmetic operations
       if (op === '+') {
         for (const arg of args) {
@@ -584,10 +589,10 @@ class Compiler {
    */
   compileLetStar(args, tailPosition) {
     const [bindings, body] = args;
-    
+
     // Enter new scope
     this.pushScope();
-    
+
     // Compile each binding (each can see previous ones)
     for (const [name, value] of bindings) {
       this.compile(value, false);
@@ -595,10 +600,37 @@ class Compiler {
       this.emit(OP_STORE_VAR, nameIdx);
       this.addLocal(name);
     }
-    
+
     // Compile body
     this.compile(body, tailPosition);
-    
+
+    // Exit scope
+    this.popScope();
+  }
+
+  /**
+   * Compile a letrec expression (mutually recursive bindings)
+   * @param {Array} args - [bindings, body]
+   * @param {boolean} tailPosition
+   */
+  compileLetrec(args, tailPosition) {
+    const [bindings, body] = args;
+
+    // Enter new scope with ALL binding names visible from the start
+    // This allows mutually recursive references
+    const names = bindings.map(([name, _]) => name);
+    this.pushScope(names);
+
+    // Compile each binding value (all names are already in scope)
+    for (const [name, value] of bindings) {
+      this.compile(value, false);
+      const nameIdx = this.addConstant(name);
+      this.emit(OP_STORE_VAR, nameIdx);
+    }
+
+    // Compile body
+    this.compile(body, tailPosition);
+
     // Exit scope
     this.popScope();
   }
