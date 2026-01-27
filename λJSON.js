@@ -1241,27 +1241,6 @@ function evaluateInternal(exp, env, opts) {
         localEnv[variable] = evaluate(value, localEnv);
       });
       return evaluate(body, localEnv);
-    } else if (operator === 'quote') {
-      return args[0]; // Return the unevaluated value as a literal
-    } else if (operator === 'eq?') {
-      if (!Array.isArray(bindings)) {
-        throw new Error('let* bindings must be an array');
-      }
-      // Convert env to Environment if needed and extend it
-      const baseEnv = env instanceof Environment 
-        ? env 
-        : Environment.fromObject(env, globalEnv);
-      const localEnv = baseEnv.extend();
-      
-      for (const binding of bindings) {
-        if (!Array.isArray(binding) || binding.length !== 2) {
-          throw new Error('let* binding must be [variable, value]');
-        }
-        const [variable, value] = binding;
-        // Evaluate in localEnv (sequential let* bindings)
-        localEnv.set(variable, evaluate(value, localEnv, opts));
-      }
-      return evaluate(body, localEnv, opts);
     }
 
     if (operator === 'quote') {

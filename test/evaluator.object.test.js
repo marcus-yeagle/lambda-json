@@ -1,4 +1,4 @@
-const { evaluate } = require('../λjson.js');
+const { evaluate } = require('../λJSON.js');
 
 // ============================================
 // Object Self-Evaluation

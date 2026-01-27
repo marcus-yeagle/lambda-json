@@ -1,4 +1,4 @@
-const { globalEnv, evaluate } = require('../λjson.js');
+const { globalEnv, evaluate } = require('../λJSON.js');
 
 test('evaluates logical "and" operator with true arguments', () => {
   const result = evaluate(['and', true, true, true], globalEnv);

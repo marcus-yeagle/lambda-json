@@ -1,4 +1,4 @@
-const { evaluate } = require('../λjson.js');
+const { evaluate } = require('../λJSON.js');
 test('evaluates a λ.json number to JS number', () => {
   expect(evaluate(42, {})).toBe(42);
 });

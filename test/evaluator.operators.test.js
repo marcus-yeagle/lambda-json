@@ -1,4 +1,4 @@
-const { evaluate, globalEnv } = require('../λjson.js');
+const { evaluate, globalEnv } = require('../λJSON.js');
 
 // ============================================
 // Comparison Operators: >=, <=

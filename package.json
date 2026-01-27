@@ -4,7 +4,8 @@
   "description": "A Turing-complete, homoiconic strict subset of the JSON data interchange format.",
   "main": "λjson.js",
   "scripts": {
-    "test": "jest",
+    "test": "node --experimental-vm-modules node_modules/jest/bin/jest.js",
+    "test:toon": "node --experimental-vm-modules node_modules/jest/bin/jest.js --testPathPattern=toon",
     "cli": "node cli.js -repl"
   },
   "keywords": [],
@@ -12,5 +13,8 @@
   "license": "MIT",
   "devDependencies": {
     "jest": "^29.7.0"
+  },
+  "dependencies": {
+    "@toon-format/toon": "^2.1.0"
   }
 }

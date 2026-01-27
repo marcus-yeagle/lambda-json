@@ -1,4 +1,4 @@
-const { evaluate, globalEnv } = require('../λjson.js');
+const { evaluate, globalEnv } = require('../λJSON.js');
 
 test('evaluates a stream of integers and takes the first 5 elements', () => {
   // Define the integers-from stream generator

@@ -1,4 +1,4 @@
-const { globalEnv, evaluate } = require('../λjson.js');
+const { globalEnv, evaluate } = require('../λJSON.js');
 
 test('evaluates a cond statement with a ">" condition', () => {
   const result = evaluate(

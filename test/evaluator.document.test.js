@@ -4,7 +4,7 @@ const {
   SPEC_VERSION, 
   getVersion,
   resetWarnings 
-} = require('../λjson.js');
+} = require('../λJSON.js');
 
 describe('document validation', () => {
   test('validates plain expression as valid', () => {
