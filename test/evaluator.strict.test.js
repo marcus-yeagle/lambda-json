@@ -1,4 +1,4 @@
-const { evaluate, resetWarnings } = require('../λjson.js');
+const { evaluate, resetWarnings } = require('../λJSON.js');
 
 describe('strict mode', () => {
   beforeEach(() => {

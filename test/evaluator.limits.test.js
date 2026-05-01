@@ -1,4 +1,4 @@
-const { evaluate, resetExecutionState, resetWarnings } = require('../λjson.js');
+const { evaluate, resetExecutionState, resetWarnings } = require('../λJSON.js');
 
 describe('resource limits', () => {
   beforeEach(() => {

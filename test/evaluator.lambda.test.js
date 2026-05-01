@@ -1,4 +1,4 @@
-const { globalEnv, evaluate } = require('../λjson.js');
+const { globalEnv, evaluate } = require('../λJSON.js');
 
 test('defines and evaluates a lambda function in the global environment', () => {
   const result = evaluate(

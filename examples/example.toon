@@ -1,0 +1,14 @@
+data[4]: 1,2,3,4
+code[3]:
+  - λ
+  - [1]: nums
+  - [3]:
+    - /
+    - [3]:
+      - reduce
+      - [3]:
+        - λ
+        - [2]: acc,curr
+        - [3]: +,acc,curr
+      - nums
+    - [2]: length,nums

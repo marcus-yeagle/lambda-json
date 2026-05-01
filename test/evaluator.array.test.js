@@ -1,4 +1,4 @@
-const { evaluate } = require('../λjson.js');
+const { evaluate } = require('../λJSON.js');
 
 test('evaluates a λ.json array of numbers to a JS array of numbers', () => {
   const result = evaluate([1, 2, 3], {});
