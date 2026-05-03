@@ -150,4 +150,3 @@ Until formal IANA registration is complete, implementations may use:
 - `application/x-lambda-json` (experimental, deprecated pattern)
 
 The `vnd.` prefix allows immediate use without formal registration while indicating the vendor-specific nature of the type.
-

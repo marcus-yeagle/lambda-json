@@ -36,7 +36,6 @@ null            ::= "null"
 string          ::= '"' characters '"'
 characters      ::= character*
 character       ::= unescaped | escaped
-unescaped       ::= any Unicode character except " or \ or control characters
 escaped         ::= "\" ('"' | "\" | "/" | "b" | "f" | "n" | "r" | "t" | "u" hex hex hex hex)
 hex             ::= digit | "a" | "b" | "c" | "d" | "e" | "f" | "A" | "B" | "C" | "D" | "E" | "F"
 
@@ -241,4 +240,3 @@ This document uses Extended Backus-Naur Form (EBNF) with the following conventio
 ## Version
 
 This grammar corresponds to λJSON specification version 1.0.
-
